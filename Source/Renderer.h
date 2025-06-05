@@ -26,6 +26,11 @@ class Renderer {
 		static unsigned int currentProgram;
 		static unsigned int textureLocation; //uniform
 		static unsigned int renderCopyId;
+		static unsigned int renderRectId;
+		static unsigned int renderRectExId;
+		static unsigned int renderCopyExId;
+		static unsigned int RenderCopyExTransform;
+
 
 	public:
 		static unsigned int VAO, VBO, EBO;
@@ -38,11 +43,11 @@ class Renderer {
 
 		static void RenderRectangle(Rectangle& rect, glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f));
 
-		static void RenderRectangleF(RectangleF & rect, glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f));
+		static void RenderRectangleF(const RectangleF & rect, const glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f));
 
 		static void RenderRectangleEX(Rectangle& rect, glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f), float rotation = 0.0f);
 
-		static void RenderRectangleFEX(RectangleF& rect, glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f), float rotation = 0.0f);
+		static void RenderRectangleFEX(const RectangleF& rect, const glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f), const float rotation = 0.0f);
 
 		static void RenderCopyF(RectangleF& rect, const MethaneTexture& texture);
 		static void RenderCopy(Rectangle& rect, const MethaneTexture& texture);

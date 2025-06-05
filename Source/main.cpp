@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-    SDL_Surface* surf = IMG_Load("Textures/testPNG2.png");
+    SDL_Surface* surf = IMG_Load("Textures/testPNG.png");
 
     MethaneTexture metTex;
     metTex.texture = texture;
@@ -85,17 +85,16 @@ int main(int argc, char* argv[]) {
         std::cout << "Failed to load image: " << IMG_GetError() << std::endl;
     }
     else {
-
-        SDL_Surface* flipped = FlipSurfaceVertical(surf);
-        surf = flipped;
+        SDL_Surface* formatted = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_RGBA32, 0); // Aby siê nie crashowa³o jak jest z³y format
+        SDL_FreeSurface(surf); 
+        surf = formatted;
+        surf = FlipSurfaceVertical(surf);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surf->w, surf->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels); // RGBA dla png
         metTex.w = surf->w;
         metTex.h = surf->h;
         glGenerateMipmap(GL_TEXTURE_2D);
-
-        SDL_FreeSurface(surf);
     }
-
+    SDL_FreeSurface(surf);
     std::cout << "Textura: " << metTex.texture << " " << metTex.w << " " << metTex.h << "\n";
 
     
@@ -110,7 +109,10 @@ int main(int argc, char* argv[]) {
     bool running = true;
     SDL_Event event;
 
-    Rectangle rect{ 0,0,100,100 };
+    Rectangle rect{ 100,100,100,100 };
+    RectangleF rectF{ 0.0f,0.0f,0.5f,0.5f };
+    Rectangle sourceRect{ 0,0,200,200 };
+    RectangleF sourceRectF{ 0.0f,0.0f,0.5f,0.5f };
 
 
     float counter = 0;
@@ -129,7 +131,7 @@ int main(int argc, char* argv[]) {
         auto start = std::chrono::high_resolution_clock::now();
 
         for (int i = 0; i < 1000; ++i) {
-            Renderer::RenderCopy(rect, metTex);
+            Renderer::RenderCopyEX(rect,metTex,counter);
         }
         auto end = std::chrono::high_resolution_clock::now();
 
@@ -137,7 +139,7 @@ int main(int argc, char* argv[]) {
 
         auto avgDuration = totalDuration / 1000;
 
-        std::cout << "Œredni czas RenderCopy: " << avgDuration << " ns" << std::endl;
+        std::cout << "Œredni czas Renderowania: " << avgDuration << " ns" << std::endl;
 
         
         counter++;

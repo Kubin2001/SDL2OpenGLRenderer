@@ -13,7 +13,11 @@ unsigned int Renderer::W = 100;
 unsigned int Renderer::H = 100;
 unsigned int Renderer::currentProgram = 0;
 unsigned int Renderer::textureLocation = 0;
+unsigned int Renderer::RenderCopyExTransform;
 unsigned int Renderer::renderCopyId = 0;
+unsigned int Renderer::renderCopyExId = 0;
+unsigned int Renderer::renderRectId = 0;
+unsigned int Renderer::renderRectExId = 0;
 glm::mat4 Renderer::tarnsMatrix = glm::mat4(1.0f);
 
 unsigned int Renderer::indecies[6] = { 0, 1, 2, //Indeksy 1 trójk¹ta
@@ -66,9 +70,6 @@ bool Renderer::Start(unsigned int W, unsigned int H) {
     glEnableVertexAttribArray(3);
 
 
-    // Ponowne bindowanie VAO i VBO (mo¿na to pomin¹æ, poniewa¿ s¹ ju¿ zbindowane)
-    glBindVertexArray(Renderer::VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, Renderer::VBO);
 
 
     // Przyœpieszacze
@@ -98,16 +99,23 @@ bool Renderer::Start(unsigned int W, unsigned int H) {
     names = { "VertexShaderRenderCopyEX" ,"FragmentShaderRenderCopyEX" };
     ShaderLoader::CreateShaderProgram(names, "ShaderProgramRenderCopyEX");
 
-    Renderer::textureLocation = glGetUniformLocation(ShaderLoader::GetProgram("ShaderProgramRenderCopy"), "texture1");
+
     glEnable(GL_BLEND);
     Renderer::renderCopyId = ShaderLoader::GetProgram("ShaderProgramRenderCopy");
+    Renderer::renderRectId = ShaderLoader::GetProgram("ShaderProgram");
+    Renderer::renderRectExId = ShaderLoader::GetProgram("ShaderProgramEX");
+    Renderer::renderCopyExId = ShaderLoader::GetProgram("ShaderProgramRenderCopyEX");
 
+    Renderer::textureLocation = glGetUniformLocation(Renderer::renderCopyId, "texture1");
+    Renderer::RenderCopyExTransform = glGetUniformLocation(Renderer::renderCopyExId, "transform");
     return true;
 }
 
 void Renderer::RenderRectangle(Rectangle& rect, glm::vec3 color) {
-
-    glUseProgram(ShaderLoader::GetProgram("ShaderProgram"));
+    if (Renderer::currentProgram != Renderer::renderRectId) {
+        Renderer::currentProgram = Renderer::renderRectId;
+        glUseProgram(Renderer::renderRectId);
+    }
     RectangleF temp;
     // -1.0f dlatego ¿e nieznormalizowana jest od -1.0 a nie 0.0
     // * 2.0f dlatego ¿e w innym wypadku ekran by³by traktowany jakby mia³ powójn¹ szerokoœæ
@@ -125,30 +133,17 @@ void Renderer::RenderRectangle(Rectangle& rect, glm::vec3 color) {
     //temp.h = (static_cast<float>(rect.h) / H) * 2.0f;
     //std::cout <<temp.x<<"  " << temp.y << "\n";
 
+    const float colR = color.x;
+    const float colG = color.y;
+    const float colB = color.z;
 
-
-    glm::vec3 t1WUp{ temp.x,temp.y,0.0f }; // lewy górny
-
-    glm::vec3 t1WDown{ temp.x,temp.y - temp.h,0.0f }; // lewy dolny
-
-    glm::vec3 t1WRight{ temp.x + temp.w,temp.y - temp.h,0.0f }; // prawy dolny
-
-
-    glm::vec3 t2WUp{ temp.x,temp.y,0.0f }; // lewy górny
-
-    glm::vec3 t2WRight{ temp.x + temp.w,temp.y,0.0f }; // prawy górny
-
-    glm::vec3 t2WRDown{ temp.x + temp.w,temp.y - temp.h,0.0f }; // prawy dolny
-
-
-    // Tworzenie tablicy wierzcho³ków zawieraj¹cej punkty startowy i koñcowy linii
-    glm::vec3 verticesT1[]{ t1WUp,color,
-                            t1WDown,color,
-                            t1WRight,color };
-
-    glm::vec3 verticesT2[]{ t2WUp,color,
-                            t2WRight,color,
-                            t2WRDown,color };
+    float vertices[] = {
+        // pos.x, pos.y, pos.z,  col.r, col.g, col.b,  tex.u, tex.v
+        temp.x,          temp.y - temp.h,  0.0f,     color.x, color.y,color.z,
+        temp.x,          temp.y,           0.0f,     color.x, color.y,color.z,
+        temp.x + temp.w, temp.y,           0.0f,     color.x, color.y,color.z,
+        temp.x + temp.w, temp.y - temp.h,  0.0f,     color.x, color.y,color.z
+    };
 
 
 
@@ -157,72 +152,59 @@ void Renderer::RenderRectangle(Rectangle& rect, glm::vec3 color) {
     // sizeof(vertices) - rozmiar danych w bajtach
     // vertices - wskaŸnik do danych
     // GL_STATIC_DRAW - wskazówka dla OpenGL, jak u¿ywaæ danych (STATIC_DRAW oznacza, ¿e dane nie bêd¹ czêsto zmieniane)
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verticesT1), verticesT1, GL_STATIC_DRAW);
 
     // Rysowanie linii
     // GL_LINES - tryb rysowania (linie)
     // 0 - indeks pierwszego wierzcho³ka
     // 2 - liczba wierzcho³ków do narysowania
-    glDrawArrays(GL_TRIANGLES, 0, 6);
 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verticesT2), verticesT2, GL_STATIC_DRAW);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     // W³¹czenie atrybututów iwerzcho³ków
 }
 
-void Renderer::RenderRectangleF(RectangleF& rect, glm::vec3 color) {
+void Renderer::RenderRectangleF(const RectangleF& rect, const glm::vec3 color) {
     // W³¹czenie atrybututów iwerzcho³ków
-    glUseProgram(ShaderLoader::GetProgram("ShaderProgram"));
+    if (Renderer::currentProgram != Renderer::renderRectId) {
+        Renderer::currentProgram = Renderer::renderRectId;
+        glUseProgram(Renderer::renderRectId);
+    }
 
-    glm::vec3 t1WUp{ rect.x,rect.y,0.0f }; // lewy górny
-
-    glm::vec3 t1WDown{ rect.x,rect.y - rect.h,0.0f }; // lewy dolny
-
-    glm::vec3 t1WRight{ rect.x + rect.w,rect.y - rect.h,0.0f }; // prawy dolny
-
-
-    glm::vec3 t2WUp{ rect.x,rect.y,0.0f }; // lewy górny
-
-    glm::vec3 t2WRight{ rect.x + rect.w,rect.y,0.0f }; // prawy górny
-
-    glm::vec3 t2WRDown{ rect.x + rect.w,rect.y - rect.h,0.0f }; // prawy dolny
-
-
-    // Tworzenie tablicy wierzcho³ków zawieraj¹cej punkty startowy i koñcowy linii
-    glm::vec3 verticesT1[]{ t1WUp,color,
-                            t1WDown,color,
-                            t1WRight,color };
-
-    glm::vec3 verticesT2[]{ t2WUp,color,
-                            t2WRight,color,
-                            t2WRDown,color };
-
-
+    float vertices[] = {
+        // pos.x, pos.y, pos.z,  col.r, col.g, col.b,  tex.u, tex.v
+        rect.x,          rect.y - rect.h,  0.0f,     color.x, color.y,color.z,
+        rect.x,          rect.y,           0.0f,     color.x, color.y,color.z,
+        rect.x + rect.w, rect.y,           0.0f,     color.x, color.y,color.z,
+        rect.x + rect.w, rect.y - rect.h,  0.0f,     color.x, color.y,color.z
+    };
 
     // Przes³anie danych wierzcho³ków do VBO
     // GL_ARRAY_BUFFER - typ bufora
     // sizeof(vertices) - rozmiar danych w bajtach
     // vertices - wskaŸnik do danych
     // GL_STATIC_DRAW - wskazówka dla OpenGL, jak u¿ywaæ danych (STATIC_DRAW oznacza, ¿e dane nie bêd¹ czêsto zmieniane)
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verticesT1), verticesT1, GL_STATIC_DRAW);
+    /*glBufferData(GL_ARRAY_BUFFER, sizeof(verticesT1), verticesT1, GL_STATIC_DRAW);*/
 
     // Rysowanie linii
     // GL_LINES - tryb rysowania (linie)
     // 0 - indeks pierwszego wierzcho³ka
     // 2 - liczba wierzcho³ków do narysowania
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    //glDrawArrays(GL_TRIANGLES, 0, 6);
 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verticesT2), verticesT2, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     // W³¹czenie atrybututów iwerzcho³ków
 }
 
 
-void Renderer::RenderRectangleFEX(RectangleF& rect, glm::vec3 color, float rotation) {
+void Renderer::RenderRectangleFEX(const RectangleF& rect, const glm::vec3 color, const float rotation) {
     // W³¹czenie atrybututów iwerzcho³ków
-    glUseProgram(ShaderLoader::GetProgram("ShaderProgramEX"));
+    if (Renderer::currentProgram != Renderer::renderRectExId) {
+        Renderer::currentProgram = Renderer::renderRectExId;
+        glUseProgram(Renderer::renderRectExId);
+    }
 
     // Wierzcho³ki zdefiniowane wzglêdem œrodka prostok¹ta
     float halfW = rect.w / 2.0f;
@@ -237,17 +219,16 @@ void Renderer::RenderRectangleFEX(RectangleF& rect, glm::vec3 color, float rotat
     };
 
     // Tworzymy macierz modelu
-    glm::mat4 model = glm::mat4(1.0f);
+    Renderer::tarnsMatrix = glm::mat4(1.0f);
 
     // Najpierw translacja do pozycji prostok¹ta (œrodek)
-    model = glm::translate(model, glm::vec3(rect.x + halfW, rect.y - halfH, 0.0f));
+    Renderer::tarnsMatrix = glm::translate(Renderer::tarnsMatrix, glm::vec3(rect.x + halfW, rect.y - halfH, 0.0f));
 
     // Potem obrót wokó³ Z
-    model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+    Renderer::tarnsMatrix = glm::rotate(Renderer::tarnsMatrix, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 
     // Przes³anie macierzy do shadera
-    unsigned int id = ShaderLoader::GetProgram("ShaderProgramEX");
-    glUniformMatrix4fv(glGetUniformLocation(id, "transform"), 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(glGetUniformLocation(Renderer::currentProgram, "transform"), 1, GL_FALSE, glm::value_ptr(Renderer::tarnsMatrix));
 
     // Za³aduj dane do bufora
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -260,8 +241,10 @@ void Renderer::RenderRectangleFEX(RectangleF& rect, glm::vec3 color, float rotat
 
 void Renderer::RenderRectangleEX(Rectangle& rect, glm::vec3 color, float rotation) {
     // W³¹czenie atrybututów iwerzcho³ków
-    unsigned int id = ShaderLoader::GetProgram("ShaderProgramEX");
-    glUseProgram(id);
+    if (Renderer::currentProgram != Renderer::renderRectExId) {
+        Renderer::currentProgram = Renderer::renderRectExId;
+        glUseProgram(Renderer::renderRectExId);
+    }
 
     RectangleF temp;
     // -1.0f dlatego ¿e nieznormalizowana jest od -1.0 a nie 0.0
@@ -293,18 +276,17 @@ void Renderer::RenderRectangleEX(Rectangle& rect, glm::vec3 color, float rotatio
     };
 
     // Tworzymy macierz modelu
-    glm::mat4 model = glm::mat4(1.0f);
+    Renderer::tarnsMatrix = glm::mat4(1.0f);
 
     // Najpierw translacja do pozycji prostok¹ta (œrodek)
-    model = glm::translate(model, glm::vec3(temp.x + halfW, temp.y - halfH, 0.0f));
+    tarnsMatrix = glm::translate(tarnsMatrix, glm::vec3(temp.x + halfW, temp.y - halfH, 0.0f));
 
     // Potem obrót wokó³ Z
-    model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-    float aspect = static_cast<float>(W) / static_cast<float>(H);
-    model = glm::scale(model, glm::vec3(1.0f, aspect, 1.0f));
+    tarnsMatrix = glm::rotate(tarnsMatrix, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+
 
     // Przes³anie macierzy do shadera
-    glUniformMatrix4fv(glGetUniformLocation(id, "transform"), 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(glGetUniformLocation(Renderer::currentProgram, "transform"), 1, GL_FALSE, glm::value_ptr(tarnsMatrix));
 
     // Za³aduj dane do bufora
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -316,21 +298,20 @@ void Renderer::RenderRectangleEX(Rectangle& rect, glm::vec3 color, float rotatio
 
 
 void Renderer::RenderCopyF(RectangleF& rect, const MethaneTexture& texture) {
-    // W³¹cz blending
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // aktywacja tekstury
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture.texture);
 
     // W³¹czenie atrybututów iwerzcho³ków
-    glUseProgram(ShaderLoader::GetProgram("ShaderProgramRenderCopy"));
+    if (Renderer::currentProgram != Renderer::renderCopyId) {
+        Renderer::currentProgram = Renderer::renderCopyId;
+        glUseProgram(Renderer::renderCopyId);
+    }
 
-    GLint textureLocation = glGetUniformLocation(ShaderLoader::GetProgram("ShaderProgramRenderCopy"), "texture1");
 
     // Przypisanie tekstury do samplera (uniforma 'texture1') - tekstura 0
-    glUniform1i(textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
+    glUniform1i(Renderer::textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
 
 
     float vertices[] = {
@@ -385,21 +366,19 @@ void Renderer::RenderCopy(Rectangle& rect, const MethaneTexture& texture) {
 }
 
 void Renderer::RenderCopyPartF(RectangleF& rect, RectangleF& source, const MethaneTexture& texture) {
-    // W³¹cz blending
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     // aktywacja tekstury
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture.texture);
 
     // W³¹czenie atrybututów iwerzcho³ków
-    glUseProgram(ShaderLoader::GetProgram("ShaderProgramRenderCopy"));
+    if (Renderer::currentProgram != Renderer::renderCopyId) {
+        Renderer::currentProgram = Renderer::renderCopyId;
+        glUseProgram(Renderer::renderCopyId);
+    }
 
-    GLint textureLocation = glGetUniformLocation(ShaderLoader::GetProgram("ShaderProgramRenderCopy"), "texture1");
 
     // Przypisanie tekstury do samplera (uniforma 'texture1') - tekstura 0
-    glUniform1i(textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
+    glUniform1i(Renderer::textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
 
 
     float u0 = source.x;
@@ -429,21 +408,20 @@ void Renderer::RenderCopyPart(Rectangle& rect, Rectangle& source, const MethaneT
     temp.y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
     temp.w = (static_cast<float>(rect.w) / W) * 2.0f;
     temp.h = (static_cast<float>(rect.h) / H) * 2.0f;
-    // W³¹cz blending
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 
     // aktywacja tekstury
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tex.texture);
 
     // W³¹czenie atrybututów iwerzcho³ków
-    glUseProgram(ShaderLoader::GetProgram("ShaderProgramRenderCopy"));
-
-    GLint textureLocation = glGetUniformLocation(ShaderLoader::GetProgram("ShaderProgramRenderCopy"), "texture1");
-
+    if (Renderer::currentProgram != Renderer::renderCopyId) {
+        Renderer::currentProgram = Renderer::renderCopyId;
+        glUseProgram(Renderer::renderCopyId);
+    }
     // Przypisanie tekstury do samplera (uniforma 'texture1') - tekstura 0
-    glUniform1i(textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
+    glUniform1i(Renderer::textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
+
     RectangleF tempSource;
 
     tempSource.x = static_cast<float>(source.x) / tex.w;
@@ -472,21 +450,18 @@ void Renderer::RenderCopyPart(Rectangle& rect, Rectangle& source, const MethaneT
 }
 
 void Renderer::RenderCopyFEX(RectangleF& rect, const MethaneTexture& texture, float rotation) {
-    // W³¹cz blending
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    unsigned int id = ShaderLoader::GetProgram("ShaderProgramRenderCopyEX");
-    glUseProgram(id);
+    if (Renderer::currentProgram != Renderer::renderCopyExId) {
+        Renderer::currentProgram = Renderer::renderCopyExId;
+        glUseProgram(Renderer::renderCopyExId);
+    }
 
     // aktywacja tekstury
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture.texture);
 
 
-    glUseProgram(id);
-
-    GLint textureLocation = glGetUniformLocation(id, "texture1");
-    glUniform1i(textureLocation, 0); 
+    // Przypisanie tekstury do samplera (uniforma 'texture1') - tekstura 0
+    glUniform1i(Renderer::textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
 
 
     float halfW = rect.w / 2.0f;
@@ -514,7 +489,7 @@ void Renderer::RenderCopyFEX(RectangleF& rect, const MethaneTexture& texture, fl
     model = glm::scale(model, glm::vec3(1.0f, aspect, 1.0f));
 
     // Przes³anie macierzy do shadera
-    glUniformMatrix4fv(glGetUniformLocation(id, "transform"), 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(Renderer::RenderCopyExTransform, 1, GL_FALSE, glm::value_ptr(model));
 
     // Za³aduj dane do bufora
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -525,21 +500,18 @@ void Renderer::RenderCopyFEX(RectangleF& rect, const MethaneTexture& texture, fl
 }
 
 void Renderer::RenderCopyEX(Rectangle& rect, const MethaneTexture& texture, float rotation) {
-    // W³¹cz blending
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    unsigned int id = ShaderLoader::GetProgram("ShaderProgramRenderCopyEX");
-    glUseProgram(id);
+    if (Renderer::currentProgram != Renderer::renderCopyExId) {
+        Renderer::currentProgram = Renderer::renderCopyExId;
+        glUseProgram(Renderer::renderCopyExId);
+    }
 
     // aktywacja tekstury
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture.texture);
 
 
-    glUseProgram(id);
-
-    GLint textureLocation = glGetUniformLocation(id, "texture1");
-    glUniform1i(textureLocation, 0);
+    // Przypisanie tekstury do samplera (uniforma 'texture1') - tekstura 0
+    glUniform1i(Renderer::textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
     RectangleF temp;
     // -1.0f dlatego ¿e nieznormalizowana jest od -1.0 a nie 0.0
     // * 2.0f dlatego ¿e w innym wypadku ekran by³by traktowany jakby mia³ powójn¹ szerokoœæ
@@ -570,11 +542,9 @@ void Renderer::RenderCopyEX(Rectangle& rect, const MethaneTexture& texture, floa
 
     // Potem obrót wokó³ Z
     model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-    float aspect = static_cast<float>(W) / static_cast<float>(H);
-    model = glm::scale(model, glm::vec3(1.0f, aspect, 1.0f));
 
     // Przes³anie macierzy do shadera
-    glUniformMatrix4fv(glGetUniformLocation(id, "transform"), 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(Renderer::RenderCopyExTransform, 1, GL_FALSE, glm::value_ptr(model));
 
     // Za³aduj dane do bufora
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
