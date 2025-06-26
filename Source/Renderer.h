@@ -30,6 +30,9 @@ class Renderer {
 		static unsigned int renderRectExId;
 		static unsigned int renderCopyExId;
 		static unsigned int RenderCopyExTransform;
+		static unsigned int currentTexture;
+
+		static std::vector<float> globalVertices;
 
 
 	public:
@@ -58,6 +61,8 @@ class Renderer {
 
 		static void RenderCopyFEX(RectangleF& rect, const MethaneTexture& texture, float rotation = 0.0f);
 		static void RenderCopyEX(Rectangle& rect, const MethaneTexture& texture, float rotation = 0.0f);
+
+		static void RenderPresent();
 
 		static void Clear();
 

@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-    SDL_Surface* surf = IMG_Load("Textures/testPNG.png");
+    SDL_Surface* surf = IMG_Load("Textures/testPNG2.png");
 
     MethaneTexture metTex;
     metTex.texture = texture;
@@ -109,14 +109,16 @@ int main(int argc, char* argv[]) {
     bool running = true;
     SDL_Event event;
 
-    Rectangle rect{ 100,100,100,100 };
+    Rectangle rect{ 0,0,200,200 };
+    Rectangle rect2{ 400,0,200,200 };
+    Rectangle rect3{ 0,400,200,200 };
     RectangleF rectF{ 0.0f,0.0f,0.5f,0.5f };
     Rectangle sourceRect{ 0,0,200,200 };
     RectangleF sourceRectF{ 0.0f,0.0f,0.5f,0.5f };
-
+    Rectangle rightUP{ 400,0,400,300 };
 
     float counter = 0;
-    while (counter < 1000) {
+    while (counter < 5000 && running) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
@@ -126,21 +128,22 @@ int main(int argc, char* argv[]) {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-
-        // Start pomiaru czasu
         auto start = std::chrono::high_resolution_clock::now();
 
-        for (int i = 0; i < 1000; ++i) {
-            Renderer::RenderCopyEX(rect,metTex,counter);
+        for (size_t i = 0; i < 333; i++) {
+            Renderer::RenderCopy(rect, metTex);
+            Renderer::RenderCopy(rect2, metTex);
+            Renderer::RenderCopy(rect3, metTex);
         }
+        Renderer::RenderPresent();
+
+
         auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
-        auto totalDuration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        std::cout << "RenderCopy x1000 took: " << duration << " microseconds\n";
 
-        auto avgDuration = totalDuration / 1000;
-
-        std::cout << "Œredni czas Renderowania: " << avgDuration << " ns" << std::endl;
-
+        
         
         counter++;
         SDL_GL_SwapWindow(window);

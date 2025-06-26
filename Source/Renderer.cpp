@@ -18,7 +18,10 @@ unsigned int Renderer::renderCopyId = 0;
 unsigned int Renderer::renderCopyExId = 0;
 unsigned int Renderer::renderRectId = 0;
 unsigned int Renderer::renderRectExId = 0;
+unsigned int Renderer::currentTexture = -1;
 glm::mat4 Renderer::tarnsMatrix = glm::mat4(1.0f);
+
+std::vector<float> Renderer::globalVertices = {};
 
 unsigned int Renderer::indecies[6] = { 0, 1, 2, //Indeksy 1 trójk¹ta
                                       0, 2, 3 }; // indeksy 2 trójk¹ta
@@ -101,6 +104,7 @@ bool Renderer::Start(unsigned int W, unsigned int H) {
 
 
     glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     Renderer::renderCopyId = ShaderLoader::GetProgram("ShaderProgramRenderCopy");
     Renderer::renderRectId = ShaderLoader::GetProgram("ShaderProgram");
     Renderer::renderRectExId = ShaderLoader::GetProgram("ShaderProgramEX");
@@ -108,6 +112,7 @@ bool Renderer::Start(unsigned int W, unsigned int H) {
 
     Renderer::textureLocation = glGetUniformLocation(Renderer::renderCopyId, "texture1");
     Renderer::RenderCopyExTransform = glGetUniformLocation(Renderer::renderCopyExId, "transform");
+    //globalVertices.reserve(1'000'000);
     return true;
 }
 
@@ -331,38 +336,38 @@ void Renderer::RenderCopyF(RectangleF& rect, const MethaneTexture& texture) {
 }
 
 void Renderer::RenderCopy(Rectangle& rect, const MethaneTexture& texture) {
-
-    RectangleF temp;
-    temp.x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
-    temp.y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
-    temp.w = (static_cast<float>(rect.w) / W) * 2.0f;
-    temp.h = (static_cast<float>(rect.h) / H) * 2.0f;
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    float x = (rect.x / static_cast<float>(W)) * 2.0f - 1.0f;
+    float y = 1.0f - (rect.y / static_cast<float>(H)) * 2.0f;
+    float w = (rect.w / static_cast<float>(W)) * 2.0f;
+    float h = (rect.h / static_cast<float>(H)) * 2.0f;
 
     // aktywacja tekstury
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture.texture);
+    if (Renderer::currentTexture != texture.texture) {
+        RenderPresent();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture.texture);
+        currentTexture = texture.texture;
+    }
     
     if (Renderer::currentProgram != Renderer::renderCopyId) {
+        RenderPresent();
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
-    
+
     // Przypisanie tekstury do samplera (uniforma 'texture1') - tekstura 0
     glUniform1i(Renderer::textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
 
-    float vertices[] = {
-        // pos.x, pos.y, pos.z,  col.r, col.g, col.b,  tex.u, tex.v
-        temp.x,          temp.y - temp.h,  0.0f,     0.0f, 0.0f,
-        temp.x,          temp.y,           0.0f,     0.0f, 1.0f,
-        temp.x + temp.w, temp.y,           0.0f,     1.0f, 1.0f,
-        temp.x + temp.w, temp.y - temp.h,  0.0f,     1.0f, 0.0f
+    //    // pos.x, pos.y, pos.z,  col.r, col.g, col.b,  tex.u, tex.v
+    float verticles[30] = {
+        x,     y - h, 0.0f, 0.0f, 0.0f,
+        x,     y,     0.0f, 0.0f, 1.0f,
+        x + w, y - h, 0.0f, 1.0f, 0.0f,
+        x,     y,     0.0f, 0.0f, 1.0f,
+        x + w, y,     0.0f, 1.0f, 1.0f,
+        x + w, y - h, 0.0f, 1.0f, 0.0f
     };
-
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
+    globalVertices.insert(globalVertices.end(), std::begin(verticles), std::end(verticles));
 }
 
 void Renderer::RenderCopyPartF(RectangleF& rect, RectangleF& source, const MethaneTexture& texture) {
@@ -380,7 +385,6 @@ void Renderer::RenderCopyPartF(RectangleF& rect, RectangleF& source, const Metha
     // Przypisanie tekstury do samplera (uniforma 'texture1') - tekstura 0
     glUniform1i(Renderer::textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
 
-
     float u0 = source.x;
     float v0 = source.y;
     float u1 = source.x + source.w;
@@ -394,10 +398,7 @@ void Renderer::RenderCopyPartF(RectangleF& rect, RectangleF& source, const Metha
         rect.x + rect.w, rect.y - rect.h,  0.0f,    u1, v0
     };
 
-
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 }
@@ -563,4 +564,16 @@ void Renderer::Clear() {
     // czyszczenie aby nie by³o wycieków pamiêci nie tworzyæ jak vbo i vao s¹ globalnie zadeklarowane
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
+}
+
+void Renderer::RenderPresent() {
+    if (globalVertices.empty())
+        return;
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, globalVertices.size() * sizeof(float), globalVertices.data(), GL_DYNAMIC_DRAW);
+
+    glDrawArrays(GL_TRIANGLES, 0, globalVertices.size());
+
+    globalVertices.clear();
 }
