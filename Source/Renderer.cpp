@@ -19,6 +19,7 @@ unsigned int Renderer::renderCopyExId = 0;
 unsigned int Renderer::renderRectId = 0;
 unsigned int Renderer::renderRectExId = 0;
 unsigned int Renderer::currentTexture = -1;
+unsigned int Renderer::renderRectMatrixLoc = -1;
 glm::mat4 Renderer::tarnsMatrix = glm::mat4(1.0f);
 
 std::vector<float> Renderer::globalVertices = {};
@@ -109,6 +110,7 @@ bool Renderer::Start(unsigned int W, unsigned int H) {
     Renderer::renderRectId = ShaderLoader::GetProgram("ShaderProgram");
     Renderer::renderRectExId = ShaderLoader::GetProgram("ShaderProgramEX");
     Renderer::renderCopyExId = ShaderLoader::GetProgram("ShaderProgramRenderCopyEX");
+    Renderer::renderRectMatrixLoc = glGetUniformLocation(ShaderLoader::GetProgram("ShaderProgramEX"), "transform");
 
     Renderer::textureLocation = glGetUniformLocation(Renderer::renderCopyId, "texture1");
     Renderer::RenderCopyExTransform = glGetUniformLocation(Renderer::renderCopyExId, "transform");
@@ -116,18 +118,36 @@ bool Renderer::Start(unsigned int W, unsigned int H) {
     return true;
 }
 
-void Renderer::RenderRectangle(Rectangle& rect, glm::vec3 color) {
+void Renderer::RenderRectangleF(const RectangleF& rect, const glm::vec3 color) {
     if (Renderer::currentProgram != Renderer::renderRectId) {
+        RenderPresent();
         Renderer::currentProgram = Renderer::renderRectId;
         glUseProgram(Renderer::renderRectId);
     }
-    RectangleF temp;
-    // -1.0f dlatego ¿e nieznormalizowana jest od -1.0 a nie 0.0
-    // * 2.0f dlatego ¿e w innym wypadku ekran by³by traktowany jakby mia³ powójn¹ szerokoœæ
-    temp.x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f; 
-    temp.y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
-    temp.w = (static_cast<float>(rect.w) / W) * 2.0f;
-    temp.h = (static_cast<float>(rect.h) / H) * 2.0f;
+
+    float vertices[] = {
+        rect.x,     rect.y - rect.h, 0.0f, color.x, color.y, color.z,
+        rect.x,     rect.y,          0.0f, color.x, color.y, color.z,
+        rect.x + rect.w, rect.y - rect.h, 0.0f, color.x, color.y, color.z,
+        rect.x,     rect.y,          0.0f, color.x, color.y, color.z,
+        rect.x + rect.w, rect.y,     0.0f, color.x, color.y, color.z,
+        rect.x + rect.w, rect.y - rect.h, 0.0f, color.x, color.y, color.z
+    };
+
+    globalVertices.insert(globalVertices.end(), std::begin(vertices), std::end(vertices));
+}
+
+void Renderer::RenderRectangle(Rectangle& rect, glm::vec3 color) {
+    if (Renderer::currentProgram != Renderer::renderRectId) {
+        RenderPresent();
+        Renderer::currentProgram = Renderer::renderRectId;
+        glUseProgram(Renderer::renderRectId);
+    }
+
+    float x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
+    float y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
+    float w = (static_cast<float>(rect.w) / W) * 2.0f;
+    float h = (static_cast<float>(rect.h) / H) * 2.0f;
 
     // Wersja gdzie punkt 0.0 jest w lewym dolnym
     // -1.0f dlatego ¿e nieznormalizowana jest od -1.0 a nie 0.0
@@ -142,113 +162,68 @@ void Renderer::RenderRectangle(Rectangle& rect, glm::vec3 color) {
     const float colG = color.y;
     const float colB = color.z;
 
+
+    // pos.x, pos.y, pos.z,  col.r, col.g, col.b
     float vertices[] = {
-        // pos.x, pos.y, pos.z,  col.r, col.g, col.b,  tex.u, tex.v
-        temp.x,          temp.y - temp.h,  0.0f,     color.x, color.y,color.z,
-        temp.x,          temp.y,           0.0f,     color.x, color.y,color.z,
-        temp.x + temp.w, temp.y,           0.0f,     color.x, color.y,color.z,
-        temp.x + temp.w, temp.y - temp.h,  0.0f,     color.x, color.y,color.z
+        x,     y - h, 0.0f, color.x, color.y,color.z,
+        x,     y,     0.0f,  color.x, color.y,color.z,
+        x + w, y - h, 0.0f,color.x, color.y,color.z,
+        x,     y,     0.0f,color.x, color.y,color.z,
+        x + w, y,     0.0f,color.x, color.y,color.z,
+        x + w, y - h, 0.0f, color.x, color.y,color.z
     };
 
 
+    globalVertices.insert(globalVertices.end(), std::begin(vertices), std::end(vertices));
 
-    // Przes³anie danych wierzcho³ków do VBO
-    // GL_ARRAY_BUFFER - typ bufora
-    // sizeof(vertices) - rozmiar danych w bajtach
-    // vertices - wskaŸnik do danych
-    // GL_STATIC_DRAW - wskazówka dla OpenGL, jak u¿ywaæ danych (STATIC_DRAW oznacza, ¿e dane nie bêd¹ czêsto zmieniane)
-
-    // Rysowanie linii
-    // GL_LINES - tryb rysowania (linie)
-    // 0 - indeks pierwszego wierzcho³ka
-    // 2 - liczba wierzcho³ków do narysowania
-
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-    // W³¹czenie atrybututów iwerzcho³ków
 }
 
-void Renderer::RenderRectangleF(const RectangleF& rect, const glm::vec3 color) {
+void Renderer::RenderRectangleFEX(const RectangleF& rect, const glm::vec3 color, const float rotation) {
     // W³¹czenie atrybututów iwerzcho³ków
     if (Renderer::currentProgram != Renderer::renderRectId) {
+        RenderPresent();
         Renderer::currentProgram = Renderer::renderRectId;
         glUseProgram(Renderer::renderRectId);
     }
 
-    float vertices[] = {
-        // pos.x, pos.y, pos.z,  col.r, col.g, col.b,  tex.u, tex.v
-        rect.x,          rect.y - rect.h,  0.0f,     color.x, color.y,color.z,
-        rect.x,          rect.y,           0.0f,     color.x, color.y,color.z,
-        rect.x + rect.w, rect.y,           0.0f,     color.x, color.y,color.z,
-        rect.x + rect.w, rect.y - rect.h,  0.0f,     color.x, color.y,color.z
-    };
-
-    // Przes³anie danych wierzcho³ków do VBO
-    // GL_ARRAY_BUFFER - typ bufora
-    // sizeof(vertices) - rozmiar danych w bajtach
-    // vertices - wskaŸnik do danych
-    // GL_STATIC_DRAW - wskazówka dla OpenGL, jak u¿ywaæ danych (STATIC_DRAW oznacza, ¿e dane nie bêd¹ czêsto zmieniane)
-    /*glBufferData(GL_ARRAY_BUFFER, sizeof(verticesT1), verticesT1, GL_STATIC_DRAW);*/
-
-    // Rysowanie linii
-    // GL_LINES - tryb rysowania (linie)
-    // 0 - indeks pierwszego wierzcho³ka
-    // 2 - liczba wierzcho³ków do narysowania
-    //glDrawArrays(GL_TRIANGLES, 0, 6);
-
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-    // W³¹czenie atrybututów iwerzcho³ków
-}
-
-
-void Renderer::RenderRectangleFEX(const RectangleF& rect, const glm::vec3 color, const float rotation) {
-    // W³¹czenie atrybututów iwerzcho³ków
-    if (Renderer::currentProgram != Renderer::renderRectExId) {
-        Renderer::currentProgram = Renderer::renderRectExId;
-        glUseProgram(Renderer::renderRectExId);
-    }
-
     // Wierzcho³ki zdefiniowane wzglêdem œrodka prostok¹ta
-    float halfW = rect.w / 2.0f;
-    float halfH = rect.h / 2.0f;
+    const float halfW = rect.w / 2.0f;
+    const float halfH = rect.h / 2.0f;
 
-    float vertices[] = {
-        // pos.x        pos.y        pos.z   col.r     col.g     col.b
-        -halfW,        -halfH,       0.0f,   color.x,  color.y,  color.z,  // bottom-left
-        -halfW,         halfH,       0.0f,   color.x,  color.y,  color.z,  // top-left
-         halfW,         halfH,       0.0f,   color.x,  color.y,  color.z,  // top-right
-         halfW,        -halfH,       0.0f,   color.x,  color.y,  color.z   // bottom-right
+    // Tworzymy macierz modelu (translacja + obrót)
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(rect.x + halfW, rect.y - halfH, 0.0f));
+    model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    // Wierzcho³ki wzglêdem œrodka
+    glm::vec3 localVertices[6] = {
+        {-halfW, -halfH, 0.0f},
+        {-halfW,  halfH, 0.0f},
+        { halfW,  halfH, 0.0f},
+
+        {-halfW, -halfH, 0.0f},
+        { halfW,  halfH, 0.0f},
+        { halfW, -halfH, 0.0f}
     };
 
-    // Tworzymy macierz modelu
-    Renderer::tarnsMatrix = glm::mat4(1.0f);
-
-    // Najpierw translacja do pozycji prostok¹ta (œrodek)
-    Renderer::tarnsMatrix = glm::translate(Renderer::tarnsMatrix, glm::vec3(rect.x + halfW, rect.y - halfH, 0.0f));
-
-    // Potem obrót wokó³ Z
-    Renderer::tarnsMatrix = glm::rotate(Renderer::tarnsMatrix, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-
-    // Przes³anie macierzy do shadera
-    glUniformMatrix4fv(glGetUniformLocation(Renderer::currentProgram, "transform"), 1, GL_FALSE, glm::value_ptr(Renderer::tarnsMatrix));
-
-    // Za³aduj dane do bufora
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // Rysuj ca³y prostok¹t (2 trójk¹ty -> 6 wierzcho³ków)
-    glDrawElements(GL_TRIANGLES, 6,GL_UNSIGNED_INT, 0);
-    // W³¹czenie atrybututów iwerzcho³ków
+    for (int i = 0; i < 6; i++) {
+        glm::vec4 transformed = model * glm::vec4(localVertices[i], 1.0f);
+        globalVertices.emplace_back(transformed.x);
+        globalVertices.emplace_back(transformed.y);
+        globalVertices.emplace_back(transformed.z);
+        globalVertices.emplace_back(color.r);
+        globalVertices.emplace_back(color.g);
+        globalVertices.emplace_back(color.b);
+    }
 }
 
 
 void Renderer::RenderRectangleEX(Rectangle& rect, glm::vec3 color, float rotation) {
     // W³¹czenie atrybututów iwerzcho³ków
-    if (Renderer::currentProgram != Renderer::renderRectExId) {
-        Renderer::currentProgram = Renderer::renderRectExId;
-        glUseProgram(Renderer::renderRectExId);
+    if (Renderer::currentProgram != Renderer::renderRectId) {
+        RenderPresent();
+        Renderer::currentProgram = Renderer::renderRectId;
+        glUseProgram(Renderer::renderRectId);
     }
 
     RectangleF temp;
@@ -269,47 +244,50 @@ void Renderer::RenderRectangleEX(Rectangle& rect, glm::vec3 color, float rotatio
     //std::cout <<temp.x<<"  " << temp.y << "\n";
 
     // Wierzcho³ki zdefiniowane wzglêdem œrodka prostok¹ta
+    // Wierzcho³ki zdefiniowane wzglêdem œrodka prostok¹ta
     float halfW = temp.w / 2.0f;
     float halfH = temp.h / 2.0f;
 
-    float vertices[] = {
-        // pos.x        pos.y        pos.z   col.r     col.g     col.b
-        -halfW,        -halfH,       0.0f,   color.x,  color.y,  color.z,  // bottom-left
-        -halfW,         halfH,       0.0f,   color.x,  color.y,  color.z,  // top-left
-         halfW,         halfH,       0.0f,   color.x,  color.y,  color.z,  // top-right
-         halfW,        -halfH,       0.0f,   color.x,  color.y,  color.z   // bottom-right
+    // Tworzymy macierz modelu (translacja + obrót)
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(temp.x + halfW, temp.y - halfH, 0.0f));
+    model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    // Wierzcho³ki wzglêdem œrodka
+    glm::vec3 localVertices[6] = {
+        {-halfW, -halfH, 0.0f},
+        {-halfW,  halfH, 0.0f},
+        { halfW,  halfH, 0.0f},
+
+        {-halfW, -halfH, 0.0f},
+        { halfW,  halfH, 0.0f},
+        { halfW, -halfH, 0.0f}
     };
 
-    // Tworzymy macierz modelu
-    Renderer::tarnsMatrix = glm::mat4(1.0f);
-
-    // Najpierw translacja do pozycji prostok¹ta (œrodek)
-    tarnsMatrix = glm::translate(tarnsMatrix, glm::vec3(temp.x + halfW, temp.y - halfH, 0.0f));
-
-    // Potem obrót wokó³ Z
-    tarnsMatrix = glm::rotate(tarnsMatrix, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-
-
-    // Przes³anie macierzy do shadera
-    glUniformMatrix4fv(glGetUniformLocation(Renderer::currentProgram, "transform"), 1, GL_FALSE, glm::value_ptr(tarnsMatrix));
-
-    // Za³aduj dane do bufora
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // Rysuj ca³y prostok¹t (2 trójk¹ty -> 6 wierzcho³ków)
-    glDrawElements(GL_TRIANGLES, 6,GL_UNSIGNED_INT, 0);
-    // W³¹czenie atrybututów iwerzcho³ków
+    for (int i = 0; i < 6; i++) {
+        glm::vec4 transformed = model * glm::vec4(localVertices[i], 1.0f);
+        globalVertices.emplace_back(transformed.x);
+        globalVertices.emplace_back(transformed.y);
+        globalVertices.emplace_back(transformed.z);
+        globalVertices.emplace_back(color.r);
+        globalVertices.emplace_back(color.g);
+        globalVertices.emplace_back(color.b);
+    }
 }
 
 
+
 void Renderer::RenderCopyF(RectangleF& rect, const MethaneTexture& texture) {
-
-    // aktywacja tekstury
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture.texture);
-
     // W³¹czenie atrybututów iwerzcho³ków
+    if (Renderer::currentTexture != texture.texture) {
+        RenderPresent();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture.texture);
+        currentTexture = texture.texture;
+    }
+
     if (Renderer::currentProgram != Renderer::renderCopyId) {
+        RenderPresent();
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
@@ -319,19 +297,15 @@ void Renderer::RenderCopyF(RectangleF& rect, const MethaneTexture& texture) {
     glUniform1i(Renderer::textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
 
 
-    float vertices[] = {
-        // pos.x, pos.y, pos.z,  col.r, col.g, col.b,  tex.u, tex.v
-        rect.x,          rect.y - rect.h,  0.0f,     0.0f, 0.0f,
-        rect.x,          rect.y,           0.0f,     0.0f, 1.0f,
-        rect.x + rect.w, rect.y,           0.0f,     1.0f, 1.0f,
-        rect.x + rect.w, rect.y - rect.h,  0.0f,     1.0f, 0.0f
+    float verticles[30] = {
+        rect.x,          rect.y - rect.h, 0.0f, 0.0f, 0.0f,
+        rect.x,          rect.y,          0.0f, 0.0f, 1.0f,
+        rect.x + rect.w, rect.y - rect.h, 0.0f, 1.0f, 0.0f,
+        rect.x,          rect.y,          0.0f, 0.0f, 1.0f,
+        rect.x + rect.w, rect.y,          0.0f, 1.0f, 1.0f,
+        rect.x + rect.w, rect.y - rect.h, 0.0f, 1.0f, 0.0f
     };
-
-
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    globalVertices.insert(globalVertices.end(), std::begin(verticles), std::end(verticles));
 
 }
 
@@ -566,9 +540,12 @@ void Renderer::Clear() {
     glDeleteBuffers(1, &VBO);
 }
 
+
+
 void Renderer::RenderPresent() {
-    if (globalVertices.empty())
+    if (globalVertices.empty()) {
         return;
+    }  
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, globalVertices.size() * sizeof(float), globalVertices.data(), GL_DYNAMIC_DRAW);

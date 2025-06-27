@@ -31,6 +31,8 @@ class Renderer {
 		static unsigned int renderCopyExId;
 		static unsigned int RenderCopyExTransform;
 		static unsigned int currentTexture;
+		static unsigned int renderRectMatrixLoc;
+		static unsigned int presentType; // 0 normal 1 with matrix
 
 		static std::vector<float> globalVertices;
 
@@ -44,9 +46,9 @@ class Renderer {
 
 		static bool Start(unsigned int W , unsigned int H);
 
-		static void RenderRectangle(Rectangle& rect, glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f));
-
 		static void RenderRectangleF(const RectangleF & rect, const glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f));
+
+		static void RenderRectangle(Rectangle& rect, glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f));
 
 		static void RenderRectangleEX(Rectangle& rect, glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f), float rotation = 0.0f);
 

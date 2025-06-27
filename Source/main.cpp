@@ -11,12 +11,7 @@
 #include "ShaderLoader.h"
 #include <SDL_image.h>
 #include <chrono>
-
-
-
-void PrintVec3(const glm::vec3 vec) {
-    std::cout << vec.x << " " << vec.y << " " << vec.z << " \n";
-}
+#include <random>
 
 SDL_Surface* FlipSurfaceVertical(SDL_Surface* surface) {
     SDL_Surface* flipped = SDL_CreateRGBSurfaceWithFormat(0, surface->w, surface->h,
@@ -33,6 +28,54 @@ SDL_Surface* FlipSurfaceVertical(SDL_Surface* surface) {
     }
 
     return flipped;
+}
+
+MethaneTexture LoadMethaneTexture(const char* path) {
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); //rozmywa piksele
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //œwietne dla pixel art
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    SDL_Surface* surf = IMG_Load(path);
+
+    MethaneTexture metTex;
+    metTex.texture = texture;
+    if (!surf) {
+        std::cout << "Failed to load image: " << IMG_GetError() << std::endl;
+    }
+    else {
+        SDL_Surface* formatted = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_RGBA32, 0); // Aby siê nie crashowa³o jak jest z³y format
+        SDL_FreeSurface(surf);
+        surf = formatted;
+        surf = FlipSurfaceVertical(surf);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surf->w, surf->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels); // RGBA dla png
+        metTex.w = surf->w;
+        metTex.h = surf->h;
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    SDL_FreeSurface(surf);
+    std::cout << "Textura za³adowana: " << metTex.texture << " " << metTex.w << " " << metTex.h << "\n";
+
+    return metTex;
+}
+
+void PrintVec3(const glm::vec3 vec) {
+    std::cout << vec.x << " " << vec.y << " " << vec.z << " \n";
+}
+
+glm::vec3 GenerateRandomColor() {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+
+    return glm::vec3(dist(gen), dist(gen), dist(gen));
 }
 
 
@@ -65,41 +108,9 @@ int main(int argc, char* argv[]) {
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << "\n";
 
     
-    unsigned int texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); //rozmywa piksele
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //œwietne dla pixel art
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-    SDL_Surface* surf = IMG_Load("Textures/testPNG2.png");
-
-    MethaneTexture metTex;
-    metTex.texture = texture;
-    if (!surf) {
-        std::cout << "Failed to load image: " << IMG_GetError() << std::endl;
-    }
-    else {
-        SDL_Surface* formatted = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_RGBA32, 0); // Aby siê nie crashowa³o jak jest z³y format
-        SDL_FreeSurface(surf); 
-        surf = formatted;
-        surf = FlipSurfaceVertical(surf);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surf->w, surf->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels); // RGBA dla png
-        metTex.w = surf->w;
-        metTex.h = surf->h;
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    SDL_FreeSurface(surf);
-    std::cout << "Textura: " << metTex.texture << " " << metTex.w << " " << metTex.h << "\n";
-
-    
-
-
+    MethaneTexture metTex1 = LoadMethaneTexture("Textures/testPNG.png");
+    MethaneTexture metTex2 = LoadMethaneTexture("Textures/tree.png");
 
 
     //
@@ -114,26 +125,29 @@ int main(int argc, char* argv[]) {
     Rectangle rect3{ 0,400,200,200 };
     RectangleF rectF{ 0.0f,0.0f,0.5f,0.5f };
     Rectangle sourceRect{ 0,0,200,200 };
-    RectangleF sourceRectF{ 0.0f,0.0f,0.5f,0.5f };
+    RectangleF sourceRectF{ -0.5f,-0.5f,0.5f,0.5f };
     Rectangle rightUP{ 400,0,400,300 };
+;
 
     float counter = 0;
-    while (counter < 5000 && running) {
+    while (counter < 100 && running) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
             }
         }
-
+        color = GenerateRandomColor();
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         auto start = std::chrono::high_resolution_clock::now();
 
-        for (size_t i = 0; i < 333; i++) {
-            Renderer::RenderCopy(rect, metTex);
-            Renderer::RenderCopy(rect2, metTex);
-            Renderer::RenderCopy(rect3, metTex);
+        for (size_t i = 0; i < 1000; i++) {
+            Renderer::RenderCopy(rect, metTex1);
+            Renderer::RenderCopyF(rectF, metTex2);
+            //Renderer::RenderRectangleFEX(sourceRectF, color, counter);
+            
+
         }
         Renderer::RenderPresent();
 
@@ -141,13 +155,15 @@ int main(int argc, char* argv[]) {
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
-        std::cout << "RenderCopy x1000 took: " << duration << " microseconds\n";
+        std::cout << "Took: " << duration << " microseconds\n";
 
         
         
         counter++;
         SDL_GL_SwapWindow(window);
     }
+
+    SDL_Delay(10000);
 
     SDL_GL_DeleteContext(glContext);
     SDL_DestroyWindow(window);
