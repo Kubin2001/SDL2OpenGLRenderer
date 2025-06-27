@@ -64,6 +64,9 @@ class Renderer {
 		static void RenderCopyFEX(RectangleF& rect, const MethaneTexture& texture, float rotation = 0.0f);
 		static void RenderCopyEX(Rectangle& rect, const MethaneTexture& texture, float rotation = 0.0f);
 
+		static void RenderCopyPartFEX(RectangleF& rect,RectangleF& source, const MethaneTexture& texture, float rotation = 0.0f);
+		static void RenderCopyPartEX(Rectangle& rect, Rectangle& source, const MethaneTexture& texture, float rotation = 0.0f);
+
 		static void RenderPresent();
 
 		static void Clear();

@@ -10,3 +10,4 @@ Simple 2D renderer test to learn SDL2-OpenGL integration
 - Batching Test
 - More Batching
 - Multiple Render Textures Test
+- Full Batching

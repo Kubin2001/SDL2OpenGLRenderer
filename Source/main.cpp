@@ -124,6 +124,7 @@ int main(int argc, char* argv[]) {
     Rectangle rect2{ 400,0,200,200 };
     Rectangle rect3{ 0,400,200,200 };
     RectangleF rectF{ 0.0f,0.0f,0.5f,0.5f };
+    RectangleF rectF2{ -0.5f,-0.5f,0.5f,0.5f };
     Rectangle sourceRect{ 0,0,200,200 };
     RectangleF sourceRectF{ -0.5f,-0.5f,0.5f,0.5f };
     Rectangle rightUP{ 400,0,400,300 };
@@ -143,8 +144,9 @@ int main(int argc, char* argv[]) {
         auto start = std::chrono::high_resolution_clock::now();
 
         for (size_t i = 0; i < 1000; i++) {
-            Renderer::RenderCopy(rect, metTex1);
-            Renderer::RenderCopyF(rectF, metTex2);
+            Renderer::RenderCopyEX(rect, metTex1,counter);
+            //Renderer::RenderCopyF(rectF, metTex2);
+            Renderer::RenderCopyFEX(rectF2, metTex2,counter);
             //Renderer::RenderRectangleFEX(sourceRectF, color, counter);
             
 

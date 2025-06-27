@@ -294,7 +294,7 @@ void Renderer::RenderCopyF(RectangleF& rect, const MethaneTexture& texture) {
 
 
     // Przypisanie tekstury do samplera (uniforma 'texture1') - tekstura 0
-    glUniform1i(Renderer::textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
+    //glUniform1i(Renderer::textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
 
 
     float verticles[30] = {
@@ -329,10 +329,8 @@ void Renderer::RenderCopy(Rectangle& rect, const MethaneTexture& texture) {
         glUseProgram(Renderer::renderCopyId);
     }
 
-    // Przypisanie tekstury do samplera (uniforma 'texture1') - tekstura 0
-    glUniform1i(Renderer::textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
 
-    //    // pos.x, pos.y, pos.z,  col.r, col.g, col.b,  tex.u, tex.v
+    //    // pos.x, pos.y, pos.z, tex.u, tex.v
     float verticles[30] = {
         x,     y - h, 0.0f, 0.0f, 0.0f,
         x,     y,     0.0f, 0.0f, 1.0f,
@@ -345,151 +343,148 @@ void Renderer::RenderCopy(Rectangle& rect, const MethaneTexture& texture) {
 }
 
 void Renderer::RenderCopyPartF(RectangleF& rect, RectangleF& source, const MethaneTexture& texture) {
-    // aktywacja tekstury
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture.texture);
+    if (Renderer::currentTexture != texture.texture) {
+        RenderPresent();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture.texture);
+        currentTexture = texture.texture;
+    }
 
-    // W³¹czenie atrybututów iwerzcho³ków
     if (Renderer::currentProgram != Renderer::renderCopyId) {
+        RenderPresent();
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
 
+    const float u0 = source.x;
+    const float v0 = source.y;
+    const float u1 = source.x + source.w;
+    const float v1 = source.y + source.h;
 
-    // Przypisanie tekstury do samplera (uniforma 'texture1') - tekstura 0
-    glUniform1i(Renderer::textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
-
-    float u0 = source.x;
-    float v0 = source.y;
-    float u1 = source.x + source.w;
-    float v1 = source.y + source.h;
-
-    float vertices[] = {
-        // pos.x,          pos.y,           pos.z,   tex.u, tex.v
-        rect.x,          rect.y - rect.h,  0.0f,    u0, v0,
-        rect.x,          rect.y,           0.0f,    u0, v1,
-        rect.x + rect.w, rect.y,           0.0f,    u1, v1,
-        rect.x + rect.w, rect.y - rect.h,  0.0f,    u1, v0
+    float verticles[30] = {
+        rect.x,          rect.y - rect.h, 0.0f, u0, v0,
+        rect.x,          rect.y,          0.0f, u0, v1,
+        rect.x + rect.w, rect.y - rect.h, 0.0f, u1, v0,
+        rect.x,          rect.y,          0.0f, u0, v1,
+        rect.x + rect.w, rect.y,          0.0f, u1, v1,
+        rect.x + rect.w, rect.y - rect.h, 0.0f, u1, v0
     };
 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
+    globalVertices.insert(globalVertices.end(), std::begin(verticles), std::end(verticles));
 }
 
-void Renderer::RenderCopyPart(Rectangle& rect, Rectangle& source, const MethaneTexture &tex) {
-    RectangleF temp;
-    temp.x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
-    temp.y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
-    temp.w = (static_cast<float>(rect.w) / W) * 2.0f;
-    temp.h = (static_cast<float>(rect.h) / H) * 2.0f;
+void Renderer::RenderCopyPart(Rectangle& rect, Rectangle& source, const MethaneTexture &texture) {
+    const float x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
+    const float y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
+    const float w = (static_cast<float>(rect.w) / W) * 2.0f;
+    const float h = (static_cast<float>(rect.h) / H) * 2.0f;
 
 
-    // aktywacja tekstury
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, tex.texture);
+    if (Renderer::currentTexture != texture.texture) {
+        RenderPresent();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture.texture);
+        currentTexture = texture.texture;
+    }
 
-    // W³¹czenie atrybututów iwerzcho³ków
     if (Renderer::currentProgram != Renderer::renderCopyId) {
+        RenderPresent();
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
-    // Przypisanie tekstury do samplera (uniforma 'texture1') - tekstura 0
-    glUniform1i(Renderer::textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
 
     RectangleF tempSource;
 
-    tempSource.x = static_cast<float>(source.x) / tex.w;
-    tempSource.y = static_cast<float>(source.y) / tex.h;
-    tempSource.w = static_cast<float>(source.w) / tex.w;
-    tempSource.h = static_cast<float>(source.h) / tex.h;
+    tempSource.x = static_cast<float>(source.x) / texture.w;
+    tempSource.y = static_cast<float>(source.y) / texture.h;
+    tempSource.w = static_cast<float>(source.w) / texture.w;
+    tempSource.h = static_cast<float>(source.h) / texture.h;
 
     float u0 = tempSource.x;
     float v0 = tempSource.y;
     float u1 = tempSource.x + tempSource.w;
     float v1 = tempSource.y + tempSource.h;
 
-    float vertices[] = {
-        // pos.x,          pos.y,           pos.z,   tex.u, tex.v
-        temp.x,          temp.y - temp.h,  0.0f,    u0, v0,
-        temp.x,          temp.y,           0.0f,    u0, v1,
-        temp.x + temp.w, temp.y,           0.0f,    u1, v1,
-        temp.x + temp.w, temp.y - temp.h,  0.0f,    u1, v0
+    // pos.x pos.y pos.z, tex.u, tex.v
+    float verticles[30] = {
+        x,     y - h, 0.0f, u0, v0,
+        x,     y,     0.0f, u0, v1,
+        x + w, y - h, 0.0f, u1, v0,
+        x,     y,     0.0f, u0, v1,
+        x + w, y,     0.0f, u1, v1,
+        x + w, y - h, 0.0f, u1, v0
     };
-
-
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    globalVertices.insert(globalVertices.end(), std::begin(verticles), std::end(verticles));
 }
 
 void Renderer::RenderCopyFEX(RectangleF& rect, const MethaneTexture& texture, float rotation) {
-    if (Renderer::currentProgram != Renderer::renderCopyExId) {
-        Renderer::currentProgram = Renderer::renderCopyExId;
-        glUseProgram(Renderer::renderCopyExId);
+    if (Renderer::currentTexture != texture.texture) {
+        RenderPresent();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture.texture);
+        currentTexture = texture.texture;
     }
 
-    // aktywacja tekstury
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture.texture);
-
-
-    // Przypisanie tekstury do samplera (uniforma 'texture1') - tekstura 0
-    glUniform1i(Renderer::textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
+    if (Renderer::currentProgram != Renderer::renderCopyId) {
+        RenderPresent();
+        Renderer::currentProgram = Renderer::renderCopyId;
+        glUseProgram(Renderer::renderCopyId);
+    }
 
 
     float halfW = rect.w / 2.0f;
     float halfH = rect.h / 2.0f;
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(rect.x + halfW, rect.y - halfH, 0.0f));
+    model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 
-    float vertices[] = {
-        // pos.x, pos.y, pos.z,   tex.u, tex.v
-       -halfW, -halfH,   0.0f,     0.0f, 0.0f,
-       -halfW,  halfH,   0.0f,     0.0f, 1.0f,
-        halfW,  halfH,   0.0f,     1.0f, 1.0f,
-        halfW, -halfH,   0.0f,     1.0f, 0.0f
+
+    // Wierzcho³ki wzglêdem œrodka
+    glm::vec3 localVertices[6] = {
+        {-halfW, -halfH, 0.0f},
+        {-halfW,  halfH, 0.0f},
+        { halfW,  halfH, 0.0f},
+
+        {-halfW, -halfH, 0.0f},
+        { halfW,  halfH, 0.0f},
+        { halfW, -halfH, 0.0f}
     };
 
+    glm::vec2 localuv[6] = {
+        {0.0f, 0.0f}, // bottom-left (C)
+        {0.0f, 1.0f}, // top-left    (A)
+        {1.0f, 1.0f}, // top-right   (B)
 
+        {0.0f, 0.0f}, // bottom-left (C)
+        {1.0f, 1.0f}, // top-right   (B)
+        {1.0f, 0.0f}  // bottom-right(D)
+    };
 
-    // Tworzymy macierz modelu
-    glm::mat4 model = glm::mat4(1.0f);
-
-    // Najpierw translacja do pozycji prostok¹ta (œrodek)
-    model = glm::translate(model, glm::vec3(rect.x + halfW, rect.y - halfH, 0.0f));
-
-    // Potem obrót wokó³ Z
-    model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-    float aspect = static_cast<float>(W) / static_cast<float>(H);
-    model = glm::scale(model, glm::vec3(1.0f, aspect, 1.0f));
-
-    // Przes³anie macierzy do shadera
-    glUniformMatrix4fv(Renderer::RenderCopyExTransform, 1, GL_FALSE, glm::value_ptr(model));
-
-    // Za³aduj dane do bufora
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // Rysuj ca³y prostok¹t (2 trójk¹ty -> 6 wierzcho³ków)
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    // W³¹czenie atrybututów iwerzcho³ków
+    for (int i = 0; i < 6; i++) {
+        glm::vec4 transformed = model * glm::vec4(localVertices[i], 1.0f);
+        globalVertices.emplace_back(transformed.x);
+        globalVertices.emplace_back(transformed.y);
+        globalVertices.emplace_back(transformed.z);
+        globalVertices.emplace_back(localuv[i][0]);
+        globalVertices.emplace_back(localuv[i][1]);
+    }
 }
 
 void Renderer::RenderCopyEX(Rectangle& rect, const MethaneTexture& texture, float rotation) {
-    if (Renderer::currentProgram != Renderer::renderCopyExId) {
-        Renderer::currentProgram = Renderer::renderCopyExId;
-        glUseProgram(Renderer::renderCopyExId);
+    if (Renderer::currentTexture != texture.texture) {
+        RenderPresent();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture.texture);
+        currentTexture = texture.texture;
     }
 
-    // aktywacja tekstury
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture.texture);
+    if (Renderer::currentProgram != Renderer::renderCopyId) {
+        RenderPresent();
+        Renderer::currentProgram = Renderer::renderCopyId;
+        glUseProgram(Renderer::renderCopyId);
+    }
 
-
-    // Przypisanie tekstury do samplera (uniforma 'texture1') - tekstura 0
-    glUniform1i(Renderer::textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
     RectangleF temp;
-    // -1.0f dlatego ¿e nieznormalizowana jest od -1.0 a nie 0.0
-    // * 2.0f dlatego ¿e w innym wypadku ekran by³by traktowany jakby mia³ powójn¹ szerokoœæ
     temp.x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
     temp.y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
     temp.w = (static_cast<float>(rect.w) / W) * 2.0f;
@@ -499,48 +494,48 @@ void Renderer::RenderCopyEX(Rectangle& rect, const MethaneTexture& texture, floa
     float halfW = temp.w / 2.0f;
     float halfH = temp.h / 2.0f;
 
-    float vertices[] = {
-        // pos.x, pos.y, pos.z,   tex.u, tex.v
-       -halfW, -halfH,   0.0f,     0.0f, 0.0f,
-       -halfW,  halfH,   0.0f,     0.0f, 1.0f,
-        halfW,  halfH,   0.0f,     1.0f, 1.0f,
-        halfW, -halfH,   0.0f,     1.0f, 0.0f
-    };
-
-
-
-    // Tworzymy macierz modelu
     glm::mat4 model = glm::mat4(1.0f);
-
-    // Najpierw translacja do pozycji prostok¹ta (œrodek)
     model = glm::translate(model, glm::vec3(temp.x + halfW, temp.y - halfH, 0.0f));
-
-    // Potem obrót wokó³ Z
     model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 
-    // Przes³anie macierzy do shadera
-    glUniformMatrix4fv(Renderer::RenderCopyExTransform, 1, GL_FALSE, glm::value_ptr(model));
 
-    // Za³aduj dane do bufora
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    // Wierzcho³ki wzglêdem œrodka
+    glm::vec3 localVertices[6] = {
+        {-halfW, -halfH, 0.0f},
+        {-halfW,  halfH, 0.0f},
+        { halfW,  halfH, 0.0f},
 
-    // Rysuj ca³y prostok¹t (2 trójk¹ty -> 6 wierzcho³ków)
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    // W³¹czenie atrybututów iwerzcho³ków
+        {-halfW, -halfH, 0.0f},
+        { halfW,  halfH, 0.0f},
+        { halfW, -halfH, 0.0f}
+    };
+
+    glm::vec2 localuv[6] = {
+        {0.0f, 0.0f}, // bottom-left (C)
+        {0.0f, 1.0f}, // top-left    (A)
+        {1.0f, 1.0f}, // top-right   (B)
+
+        {0.0f, 0.0f}, // bottom-left (C)
+        {1.0f, 1.0f}, // top-right   (B)
+        {1.0f, 0.0f}  // bottom-right(D)
+    };
+
+    for (int i = 0; i < 6; i++) {
+        glm::vec4 transformed = model * glm::vec4(localVertices[i], 1.0f);
+        globalVertices.emplace_back(transformed.x);
+        globalVertices.emplace_back(transformed.y);
+        globalVertices.emplace_back(transformed.z);
+        globalVertices.emplace_back(localuv[i][0]);
+        globalVertices.emplace_back(localuv[i][1]);
+    }
 }
 
+void RenderCopyPartFEX(RectangleF& rect, RectangleF& source, const MethaneTexture& texture, float rotation) {
 
-void Renderer::Clear() {
-    // Odwi¹zanie VAO - bezpieczne praktyka, aby nie modyfikowaæ przypadkowo tego VAO w przysz³oœci
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    // czyszczenie aby nie by³o wycieków pamiêci nie tworzyæ jak vbo i vao s¹ globalnie zadeklarowane
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
 }
+void RenderCopyPartEX(Rectangle& rect, Rectangle& source, const MethaneTexture& texture, float rotation) {
 
-
+}
 
 void Renderer::RenderPresent() {
     if (globalVertices.empty()) {
@@ -553,4 +548,14 @@ void Renderer::RenderPresent() {
     glDrawArrays(GL_TRIANGLES, 0, globalVertices.size());
 
     globalVertices.clear();
+}
+
+void Renderer::Clear() {
+    // Odwi¹zanie VAO - bezpieczne praktyka, aby nie modyfikowaæ przypadkowo tego VAO w przysz³oœci
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // czyszczenie aby nie by³o wycieków pamiêci nie tworzyæ jak vbo i vao s¹ globalnie zadeklarowane
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
 }
