@@ -11,3 +11,7 @@ Simple 2D renderer test to learn SDL2-OpenGL integration
 - More Batching
 - Multiple Render Textures Test
 - Full Batching
+
+1.03
+- Faster rotated texture rendering by about 20 %
+- Experimental RenderCopyPartEX

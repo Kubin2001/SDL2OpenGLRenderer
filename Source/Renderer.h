@@ -48,24 +48,24 @@ class Renderer {
 
 		static void RenderRectangleF(const RectangleF & rect, const glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f));
 
-		static void RenderRectangle(Rectangle& rect, glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f));
+		static void RenderRectangle(const Rectangle& rect, const glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f));
 
-		static void RenderRectangleEX(Rectangle& rect, glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f), float rotation = 0.0f);
+		static void RenderRectangleEX(const Rectangle& rect, const glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f), const float rotation = 0.0f);
 
 		static void RenderRectangleFEX(const RectangleF& rect, const glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f), const float rotation = 0.0f);
 
-		static void RenderCopyF(RectangleF& rect, const MethaneTexture& texture);
-		static void RenderCopy(Rectangle& rect, const MethaneTexture& texture);
+		static void RenderCopyF(const RectangleF& rect, const MethaneTexture& texture);
+		static void RenderCopy(const Rectangle& rect, const MethaneTexture& texture);
 
-		static void RenderCopyPartF(RectangleF& rect, RectangleF& source, const MethaneTexture& texture);
+		static void RenderCopyPartF(const RectangleF& rect, const RectangleF& source, const MethaneTexture& texture);
 
-		static void RenderCopyPart(Rectangle& rect, Rectangle& source, const MethaneTexture& texture);
+		static void RenderCopyPart(const Rectangle& rect, const Rectangle& source, const MethaneTexture& texture);
 
-		static void RenderCopyFEX(RectangleF& rect, const MethaneTexture& texture, float rotation = 0.0f);
-		static void RenderCopyEX(Rectangle& rect, const MethaneTexture& texture, float rotation = 0.0f);
+		static void RenderCopyFEX(const RectangleF& rect, const MethaneTexture& texture, const float rotation = 0.0f);
+		static void RenderCopyEX(const Rectangle& rect, const MethaneTexture& texture, const float rotation = 0.0f);
 
-		static void RenderCopyPartFEX(RectangleF& rect,RectangleF& source, const MethaneTexture& texture, float rotation = 0.0f);
-		static void RenderCopyPartEX(Rectangle& rect, Rectangle& source, const MethaneTexture& texture, float rotation = 0.0f);
+		static void RenderCopyPartFEX(const RectangleF& rect, const RectangleF& source, const MethaneTexture& texture, const float rotation = 0.0f);
+		static void RenderCopyPartEX(const Rectangle& rect, const Rectangle& source, const MethaneTexture& texture, const float rotation = 0.0f);
 
 		static void RenderPresent();
 

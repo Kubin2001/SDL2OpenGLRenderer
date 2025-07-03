@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
         auto start = std::chrono::high_resolution_clock::now();
 
         for (size_t i = 0; i < 1000; i++) {
-            Renderer::RenderCopyEX(rect, metTex1,counter);
+            //Renderer::RenderCopyEX(rect, metTex1,counter);
             //Renderer::RenderCopyF(rectF, metTex2);
             Renderer::RenderCopyFEX(rectF2, metTex2,counter);
             //Renderer::RenderRectangleFEX(sourceRectF, color, counter);

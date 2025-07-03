@@ -1,4 +1,4 @@
-#include "Renderer.h"
+ï»¿#include "Renderer.h"
 #include "glad/glad.h"
 #include "glm.hpp"
 #include "gtc/type_ptr.hpp"
@@ -24,46 +24,46 @@ glm::mat4 Renderer::tarnsMatrix = glm::mat4(1.0f);
 
 std::vector<float> Renderer::globalVertices = {};
 
-unsigned int Renderer::indecies[6] = { 0, 1, 2, //Indeksy 1 trójk¹ta
-                                      0, 2, 3 }; // indeksy 2 trójk¹ta
+unsigned int Renderer::indecies[6] = { 0, 1, 2, //Indeksy 1 trÃ³jkÄ…ta
+                                      0, 2, 3 }; // indeksy 2 trÃ³jkÄ…ta
 
 
 bool Renderer::Start(unsigned int W, unsigned int H) {
     Renderer::W = W;
     Renderer::H = H;
     // Deklaracja zmiennych dla Vertex Array Object (VAO) i Vertex Buffer Object (VBO)
-    // Generowanie VAO (Vertex Array Object) - obiekt przechowuj¹cy konfiguracjê atrybutów wierzcho³ków
+    // Generowanie VAO (Vertex Array Object) - obiekt przechowujÄ…cy konfiguracjÄ™ atrybutÃ³w wierzchoÅ‚kÃ³w
     glGenVertexArrays(1, &VAO);
 
-    // Generowanie VBO (Vertex Buffer Object) - bufor przechowuj¹cy dane wierzcho³ków
+    // Generowanie VBO (Vertex Buffer Object) - bufor przechowujÄ…cy dane wierzchoÅ‚kÃ³w
     glGenBuffers(1, &VBO);
 
-    //Generowanie ebo aby nie musieæ u¿ywaæ 6 wie¿cho³ków
+    //Generowanie ebo aby nie musieÄ‡ uÅ¼ywaÄ‡ 6 wieÅ¼choÅ‚kÃ³w
     glGenBuffers(1, &EBO);
 
-    // Bindowanie VAO - od tego momentu wszystkie operacje na VAO bêd¹ dotyczyæ tego obiektu
+    // Bindowanie VAO - od tego momentu wszystkie operacje na VAO bÄ™dÄ… dotyczyÄ‡ tego obiektu
     glBindVertexArray(VAO);
 
-    // Bindowanie VBO - od tego momentu wszystkie operacje na VBO bêd¹ dotyczyæ tego bufora
+    // Bindowanie VBO - od tego momentu wszystkie operacje na VBO bÄ™dÄ… dotyczyÄ‡ tego bufora
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
     //Ustawnianie ebo
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indecies), indecies, GL_STATIC_DRAW);
 
-    // Konfiguracja atrybutu wierzcho³ka - mówi OpenGL, jak interpretowaæ dane w buforze
+    // Konfiguracja atrybutu wierzchoÅ‚ka - mÃ³wi OpenGL, jak interpretowaÄ‡ dane w buforze
     // 0 - indeks atrybutu (w shaderze odpowiada location = 0)
-    // 3 - liczba sk³adowych (x, y, z)
+    // 3 - liczba skÅ‚adowych (x, y, z)
     // GL_FLOAT - typ danych
-    // GL_FALSE - czy normalizowaæ dane (nie w tym przypadku)
-    // 3 * sizeof(float) - odleg³oœæ miêdzy kolejnymi wierzcho³kami (w bajtach)
-    // (void*)0 - przesuniêcie do pierwszego elementu w buforze
+    // GL_FALSE - czy normalizowaÄ‡ dane (nie w tym przypadku)
+    // 3 * sizeof(float) - odlegÅ‚oÅ›Ä‡ miÄ™dzy kolejnymi wierzchoÅ‚kami (w bajtach)
+    // (void*)0 - przesuniÄ™cie do pierwszego elementu w buforze
 
     //Gdy nie ma tekstur
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0); // powierzchnie
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float))); // kolory
 
-    //Gdy s¹ tekstury
+    //Gdy sÄ… tekstury
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0); // powierzchnie
     glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))); // tekstury
 
@@ -76,7 +76,7 @@ bool Renderer::Start(unsigned int W, unsigned int H) {
 
 
 
-    // Przyœpieszacze
+    // PrzyÅ›pieszacze
     ShaderLoader::LoadShader("VertexShader", "shaders/vertex_core.glsl", GL_VERTEX_SHADER);
     ShaderLoader::LoadShader("FragmentShader", "shaders/fragment_core.glsl", GL_FRAGMENT_SHADER);
 
@@ -137,7 +137,7 @@ void Renderer::RenderRectangleF(const RectangleF& rect, const glm::vec3 color) {
     globalVertices.insert(globalVertices.end(), std::begin(vertices), std::end(vertices));
 }
 
-void Renderer::RenderRectangle(Rectangle& rect, glm::vec3 color) {
+void Renderer::RenderRectangle(const Rectangle& rect, const glm::vec3 color) {
     if (Renderer::currentProgram != Renderer::renderRectId) {
         RenderPresent();
         Renderer::currentProgram = Renderer::renderRectId;
@@ -150,8 +150,8 @@ void Renderer::RenderRectangle(Rectangle& rect, glm::vec3 color) {
     float h = (static_cast<float>(rect.h) / H) * 2.0f;
 
     // Wersja gdzie punkt 0.0 jest w lewym dolnym
-    // -1.0f dlatego ¿e nieznormalizowana jest od -1.0 a nie 0.0
-    // * 2.0f dlatego ¿e w innym wypadku ekran by³by traktowany jakby mia³ powójn¹ szerokoœæ
+    // -1.0f dlatego Å¼e nieznormalizowana jest od -1.0 a nie 0.0
+    // * 2.0f dlatego Å¼e w innym wypadku ekran byÅ‚by traktowany jakby miaÅ‚ powÃ³jnÄ… szerokoÅ›Ä‡
     //temp.x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
     //temp.y = (static_cast<float>(rect.y) / H) * 2.0f - 1.0f;
     //temp.w = (static_cast<float>(rect.w) / W) * 2.0f;
@@ -173,53 +173,47 @@ void Renderer::RenderRectangle(Rectangle& rect, glm::vec3 color) {
         x + w, y - h, 0.0f, color.x, color.y,color.z
     };
 
-
     globalVertices.insert(globalVertices.end(), std::begin(vertices), std::end(vertices));
-
 }
 
 void Renderer::RenderRectangleFEX(const RectangleF& rect, const glm::vec3 color, const float rotation) {
-    // W³¹czenie atrybututów iwerzcho³ków
+    // WÅ‚Ä…czenie atrybututÃ³w iwerzchoÅ‚kÃ³w
     if (Renderer::currentProgram != Renderer::renderRectId) {
         RenderPresent();
         Renderer::currentProgram = Renderer::renderRectId;
         glUseProgram(Renderer::renderRectId);
     }
 
-    // Wierzcho³ki zdefiniowane wzglêdem œrodka prostok¹ta
+    // WierzchoÅ‚ki zdefiniowane wzglÄ™dem Å›rodka prostokÄ…ta
     const float halfW = rect.w / 2.0f;
     const float halfH = rect.h / 2.0f;
 
-    // Tworzymy macierz modelu (translacja + obrót)
+    // Tworzymy macierz modelu (translacja + obrÃ³t)
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(rect.x + halfW, rect.y - halfH, 0.0f));
     model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 
-    // Wierzcho³ki wzglêdem œrodka
-    glm::vec3 localVertices[6] = {
-        {-halfW, -halfH, 0.0f},
-        {-halfW,  halfH, 0.0f},
-        { halfW,  halfH, 0.0f},
-
-        {-halfW, -halfH, 0.0f},
-        { halfW,  halfH, 0.0f},
-        { halfW, -halfH, 0.0f}
+    const glm::vec4 transformed0 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed1 = model * glm::vec4(-halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed2 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed3 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed4 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed5 = model * glm::vec4(halfW, -halfH, 0.0f, 1.0f);
+    const float vertex[] = {
+        transformed0.x, transformed0.y , 0.0f , color.x , color.y,color.z,
+        transformed1.x, transformed1.y , 0.0f , color.x , color.y,color.z,
+        transformed2.x, transformed2.y , 0.0f , color.x , color.y,color.z,
+        transformed3.x, transformed3.y , 0.0f , color.x , color.y,color.z,
+        transformed4.x, transformed4.y , 0.0f , color.x , color.y,color.z,
+        transformed5.x, transformed5.y , 0.0f , color.x , color.y,color.z
     };
 
-    for (int i = 0; i < 6; i++) {
-        glm::vec4 transformed = model * glm::vec4(localVertices[i], 1.0f);
-        globalVertices.emplace_back(transformed.x);
-        globalVertices.emplace_back(transformed.y);
-        globalVertices.emplace_back(transformed.z);
-        globalVertices.emplace_back(color.r);
-        globalVertices.emplace_back(color.g);
-        globalVertices.emplace_back(color.b);
-    }
+    globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
 }
 
 
-void Renderer::RenderRectangleEX(Rectangle& rect, glm::vec3 color, float rotation) {
-    // W³¹czenie atrybututów iwerzcho³ków
+void Renderer::RenderRectangleEX(const Rectangle& rect, const glm::vec3 color, const float rotation) {
+    // WÅ‚Ä…czenie atrybututÃ³w iwerzchoÅ‚kÃ³w
     if (Renderer::currentProgram != Renderer::renderRectId) {
         RenderPresent();
         Renderer::currentProgram = Renderer::renderRectId;
@@ -227,58 +221,57 @@ void Renderer::RenderRectangleEX(Rectangle& rect, glm::vec3 color, float rotatio
     }
 
     RectangleF temp;
-    // -1.0f dlatego ¿e nieznormalizowana jest od -1.0 a nie 0.0
-    // * 2.0f dlatego ¿e w innym wypadku ekran by³by traktowany jakby mia³ powójn¹ szerokoœæ
+    // -1.0f dlatego Å¼e nieznormalizowana jest od -1.0 a nie 0.0
+    // * 2.0f dlatego Å¼e w innym wypadku ekran byÅ‚by traktowany jakby miaÅ‚ powÃ³jnÄ… szerokoÅ›Ä‡
+    float aspect = static_cast<float>(H) / static_cast<float>(W);
     temp.x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
     temp.y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
     temp.w = (static_cast<float>(rect.w) / W) * 2.0f;
-    temp.h = (static_cast<float>(rect.h) / H) * 2.0f;
+    temp.h = (static_cast<float>(rect.h) / H) * 2.0f * aspect;
 
     // Wersja gdzie punkt 0.0 jest w lewym dolnym
-    // -1.0f dlatego ¿e nieznormalizowana jest od -1.0 a nie 0.0
-    // * 2.0f dlatego ¿e w innym wypadku ekran by³by traktowany jakby mia³ powójn¹ szerokoœæ
+    // -1.0f dlatego Å¼e nieznormalizowana jest od -1.0 a nie 0.0
+    // * 2.0f dlatego Å¼e w innym wypadku ekran byÅ‚by traktowany jakby miaÅ‚ powÃ³jnÄ… szerokoÅ›Ä‡
     //temp.x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
     //temp.y = (static_cast<float>(rect.y) / H) * 2.0f - 1.0f;
     //temp.w = (static_cast<float>(rect.w) / W) * 2.0f;
     //temp.h = (static_cast<float>(rect.h) / H) * 2.0f;
     //std::cout <<temp.x<<"  " << temp.y << "\n";
 
-    // Wierzcho³ki zdefiniowane wzglêdem œrodka prostok¹ta
-    // Wierzcho³ki zdefiniowane wzglêdem œrodka prostok¹ta
+    // WierzchoÅ‚ki zdefiniowane wzglÄ™dem Å›rodka prostokÄ…ta
+    // WierzchoÅ‚ki zdefiniowane wzglÄ™dem Å›rodka prostokÄ…ta
     float halfW = temp.w / 2.0f;
     float halfH = temp.h / 2.0f;
 
-    // Tworzymy macierz modelu (translacja + obrót)
+    // Tworzymy macierz modelu (translacja + obrÃ³t)
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(temp.x + halfW, temp.y - halfH, 0.0f));
     model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 
-    // Wierzcho³ki wzglêdem œrodka
-    glm::vec3 localVertices[6] = {
-        {-halfW, -halfH, 0.0f},
-        {-halfW,  halfH, 0.0f},
-        { halfW,  halfH, 0.0f},
 
-        {-halfW, -halfH, 0.0f},
-        { halfW,  halfH, 0.0f},
-        { halfW, -halfH, 0.0f}
+
+    const glm::vec4 transformed0 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed1 = model * glm::vec4(-halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed2 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed3 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed4 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed5 = model * glm::vec4(halfW, -halfH, 0.0f, 1.0f);
+    const float vertex[] = {
+        transformed0.x, transformed0.y , 0.0f , color.x , color.y,color.z,
+        transformed1.x, transformed1.y , 0.0f , color.x , color.y,color.z,
+        transformed2.x, transformed2.y , 0.0f , color.x , color.y,color.z,
+        transformed3.x, transformed3.y , 0.0f , color.x , color.y,color.z,
+        transformed4.x, transformed4.y , 0.0f , color.x , color.y,color.z,
+        transformed5.x, transformed5.y , 0.0f , color.x , color.y,color.z
     };
 
-    for (int i = 0; i < 6; i++) {
-        glm::vec4 transformed = model * glm::vec4(localVertices[i], 1.0f);
-        globalVertices.emplace_back(transformed.x);
-        globalVertices.emplace_back(transformed.y);
-        globalVertices.emplace_back(transformed.z);
-        globalVertices.emplace_back(color.r);
-        globalVertices.emplace_back(color.g);
-        globalVertices.emplace_back(color.b);
-    }
+    globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
 }
 
 
 
-void Renderer::RenderCopyF(RectangleF& rect, const MethaneTexture& texture) {
-    // W³¹czenie atrybututów iwerzcho³ków
+void Renderer::RenderCopyF(const RectangleF& rect, const MethaneTexture& texture) {
+    // WÅ‚Ä…czenie atrybututÃ³w iwerzchoÅ‚kÃ³w
     if (Renderer::currentTexture != texture.texture) {
         RenderPresent();
         glActiveTexture(GL_TEXTURE0);
@@ -294,7 +287,7 @@ void Renderer::RenderCopyF(RectangleF& rect, const MethaneTexture& texture) {
 
 
     // Przypisanie tekstury do samplera (uniforma 'texture1') - tekstura 0
-    //glUniform1i(Renderer::textureLocation, 0); // 0 oznacza, ¿e przypisujemy teksturê do GL_TEXTURE0
+    //glUniform1i(Renderer::textureLocation, 0); // 0 oznacza, Å¼e przypisujemy teksturÄ™ do GL_TEXTURE0
 
 
     float verticles[30] = {
@@ -309,11 +302,11 @@ void Renderer::RenderCopyF(RectangleF& rect, const MethaneTexture& texture) {
 
 }
 
-void Renderer::RenderCopy(Rectangle& rect, const MethaneTexture& texture) {
-    float x = (rect.x / static_cast<float>(W)) * 2.0f - 1.0f;
-    float y = 1.0f - (rect.y / static_cast<float>(H)) * 2.0f;
-    float w = (rect.w / static_cast<float>(W)) * 2.0f;
-    float h = (rect.h / static_cast<float>(H)) * 2.0f;
+void Renderer::RenderCopy(const Rectangle& rect, const MethaneTexture& texture){
+    const float x = (rect.x / static_cast<float>(W)) * 2.0f - 1.0f;
+    const float y = 1.0f - (rect.y / static_cast<float>(H)) * 2.0f;
+    const float w = (rect.w / static_cast<float>(W)) * 2.0f;
+    const float h = (rect.h / static_cast<float>(H)) * 2.0f;
 
     // aktywacja tekstury
     if (Renderer::currentTexture != texture.texture) {
@@ -342,7 +335,7 @@ void Renderer::RenderCopy(Rectangle& rect, const MethaneTexture& texture) {
     globalVertices.insert(globalVertices.end(), std::begin(verticles), std::end(verticles));
 }
 
-void Renderer::RenderCopyPartF(RectangleF& rect, RectangleF& source, const MethaneTexture& texture) {
+void Renderer::RenderCopyPartF(const RectangleF& rect, const RectangleF& source, const MethaneTexture& texture) {
     if (Renderer::currentTexture != texture.texture) {
         RenderPresent();
         glActiveTexture(GL_TEXTURE0);
@@ -373,7 +366,7 @@ void Renderer::RenderCopyPartF(RectangleF& rect, RectangleF& source, const Metha
     globalVertices.insert(globalVertices.end(), std::begin(verticles), std::end(verticles));
 }
 
-void Renderer::RenderCopyPart(Rectangle& rect, Rectangle& source, const MethaneTexture &texture) {
+void Renderer::RenderCopyPart(const Rectangle& rect, const Rectangle& source, const MethaneTexture &texture) {
     const float x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
     const float y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
     const float w = (static_cast<float>(rect.w) / W) * 2.0f;
@@ -417,7 +410,7 @@ void Renderer::RenderCopyPart(Rectangle& rect, Rectangle& source, const MethaneT
     globalVertices.insert(globalVertices.end(), std::begin(verticles), std::end(verticles));
 }
 
-void Renderer::RenderCopyFEX(RectangleF& rect, const MethaneTexture& texture, float rotation) {
+void Renderer::RenderCopyFEX(const RectangleF& rect, const MethaneTexture& texture, const float rotation) {
     if (Renderer::currentTexture != texture.texture) {
         RenderPresent();
         glActiveTexture(GL_TEXTURE0);
@@ -439,38 +432,69 @@ void Renderer::RenderCopyFEX(RectangleF& rect, const MethaneTexture& texture, fl
     model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 
 
-    // Wierzcho³ki wzglêdem œrodka
-    glm::vec3 localVertices[6] = {
-        {-halfW, -halfH, 0.0f},
-        {-halfW,  halfH, 0.0f},
-        { halfW,  halfH, 0.0f},
-
-        {-halfW, -halfH, 0.0f},
-        { halfW,  halfH, 0.0f},
-        { halfW, -halfH, 0.0f}
+    const glm::vec4 transformed0 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed1 = model * glm::vec4(-halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed2 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed3 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed4 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed5 = model * glm::vec4(halfW, -halfH, 0.0f, 1.0f);
+    const float vertex[] = {
+        transformed0.x, transformed0.y , 0.0f , 0.0f,0.0f,
+        transformed1.x, transformed1.y , 0.0f , 0.0f,1.0f,
+        transformed2.x, transformed2.y , 0.0f , 1.0f,1.0f,
+        transformed3.x, transformed3.y , 0.0f , 0.0f,0.0f,
+        transformed4.x, transformed4.y , 0.0f , 1.0f,1.0f,
+        transformed5.x, transformed5.y , 0.0f , 1.0f,0.0f
     };
 
-    glm::vec2 localuv[6] = {
-        {0.0f, 0.0f}, // bottom-left (C)
-        {0.0f, 1.0f}, // top-left    (A)
-        {1.0f, 1.0f}, // top-right   (B)
-
-        {0.0f, 0.0f}, // bottom-left (C)
-        {1.0f, 1.0f}, // top-right   (B)
-        {1.0f, 0.0f}  // bottom-right(D)
-    };
-
-    for (int i = 0; i < 6; i++) {
-        glm::vec4 transformed = model * glm::vec4(localVertices[i], 1.0f);
-        globalVertices.emplace_back(transformed.x);
-        globalVertices.emplace_back(transformed.y);
-        globalVertices.emplace_back(transformed.z);
-        globalVertices.emplace_back(localuv[i][0]);
-        globalVertices.emplace_back(localuv[i][1]);
-    }
+    globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
 }
 
-void Renderer::RenderCopyEX(Rectangle& rect, const MethaneTexture& texture, float rotation) {
+void Renderer::RenderCopyEX(const Rectangle& rect, const MethaneTexture& texture, const float rotation) {
+    if (Renderer::currentTexture != texture.texture) {
+        RenderPresent();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture.texture);
+        currentTexture = texture.texture;
+    }
+
+    if (Renderer::currentProgram != Renderer::renderCopyId) {
+        RenderPresent();
+        Renderer::currentProgram = Renderer::renderCopyId;
+        glUseProgram(Renderer::renderCopyId);
+    }
+    float aspect = static_cast<float>(H) / static_cast<float>(W);
+    const float x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
+    const float y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
+    const float w = (static_cast<float>(rect.w) / W) * 2.0f;
+    const float h = (static_cast<float>(rect.h) / H) * 2.0f * aspect;
+
+    const float halfW = w / 2.0f;
+    const float halfH = h / 2.0f;
+
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(x + halfW, y - halfH, 0.0f));
+    model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    const glm::vec4 transformed0 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed1 = model * glm::vec4(-halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed2 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed3 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed4 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed5 = model * glm::vec4(halfW, -halfH, 0.0f, 1.0f);
+    const float vertex[] = {
+        transformed0.x, transformed0.y , 0.0f , 0.0f,0.0f,
+        transformed1.x, transformed1.y , 0.0f , 0.0f,1.0f,
+        transformed2.x, transformed2.y , 0.0f , 1.0f,1.0f,
+        transformed3.x, transformed3.y , 0.0f , 0.0f,0.0f,
+        transformed4.x, transformed4.y , 0.0f , 1.0f,1.0f,
+        transformed5.x, transformed5.y , 0.0f , 1.0f,0.0f
+    };
+
+    globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
+}
+
+void Renderer::RenderCopyPartFEX(const RectangleF& rect, const RectangleF& source, const MethaneTexture& texture, const float rotation) {
     if (Renderer::currentTexture != texture.texture) {
         RenderPresent();
         glActiveTexture(GL_TEXTURE0);
@@ -484,57 +508,86 @@ void Renderer::RenderCopyEX(Rectangle& rect, const MethaneTexture& texture, floa
         glUseProgram(Renderer::renderCopyId);
     }
 
-    RectangleF temp;
-    temp.x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
-    temp.y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
-    temp.w = (static_cast<float>(rect.w) / W) * 2.0f;
-    temp.h = (static_cast<float>(rect.h) / H) * 2.0f;
 
-
-    float halfW = temp.w / 2.0f;
-    float halfH = temp.h / 2.0f;
-
+    float halfW = rect.w / 2.0f;
+    float halfH = rect.h / 2.0f;
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(temp.x + halfW, temp.y - halfH, 0.0f));
+    model = glm::translate(model, glm::vec3(rect.x + halfW, rect.y - halfH, 0.0f));
     model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 
+    const float u0 = source.x;
+    const float v0 = source.y;
+    const float u1 = source.x + source.w;
+    const float v1 = source.y + source.h;
 
-    // Wierzcho³ki wzglêdem œrodka
-    glm::vec3 localVertices[6] = {
-        {-halfW, -halfH, 0.0f},
-        {-halfW,  halfH, 0.0f},
-        { halfW,  halfH, 0.0f},
-
-        {-halfW, -halfH, 0.0f},
-        { halfW,  halfH, 0.0f},
-        { halfW, -halfH, 0.0f}
+    const glm::vec4 transformed0 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed1 = model * glm::vec4(-halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed2 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed3 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed4 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed5 = model * glm::vec4(halfW, -halfH, 0.0f, 1.0f);
+    const float vertex[] = {
+        transformed0.x, transformed0.y , 0.0f , u0, v0,
+        transformed1.x, transformed1.y , 0.0f , u0, v1,
+        transformed2.x, transformed2.y , 0.0f , u1, v0,
+        transformed3.x, transformed3.y , 0.0f , u0, v1,
+        transformed4.x, transformed4.y , 0.0f , u1, v1,
+        transformed5.x, transformed5.y , 0.0f , u1, v0
     };
 
-    glm::vec2 localuv[6] = {
-        {0.0f, 0.0f}, // bottom-left (C)
-        {0.0f, 1.0f}, // top-left    (A)
-        {1.0f, 1.0f}, // top-right   (B)
-
-        {0.0f, 0.0f}, // bottom-left (C)
-        {1.0f, 1.0f}, // top-right   (B)
-        {1.0f, 0.0f}  // bottom-right(D)
-    };
-
-    for (int i = 0; i < 6; i++) {
-        glm::vec4 transformed = model * glm::vec4(localVertices[i], 1.0f);
-        globalVertices.emplace_back(transformed.x);
-        globalVertices.emplace_back(transformed.y);
-        globalVertices.emplace_back(transformed.z);
-        globalVertices.emplace_back(localuv[i][0]);
-        globalVertices.emplace_back(localuv[i][1]);
+    globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
+}
+void Renderer::RenderCopyPartEX(const Rectangle& rect, const Rectangle& source, const MethaneTexture& texture, const float rotation) {
+    if (Renderer::currentTexture != texture.texture) {
+        RenderPresent();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture.texture);
+        currentTexture = texture.texture;
     }
-}
 
-void RenderCopyPartFEX(RectangleF& rect, RectangleF& source, const MethaneTexture& texture, float rotation) {
+    if (Renderer::currentProgram != Renderer::renderCopyId) {
+        RenderPresent();
+        Renderer::currentProgram = Renderer::renderCopyId;
+        glUseProgram(Renderer::renderCopyId);
+    }
+    float aspect = static_cast<float>(H) / static_cast<float>(W);
+    const float x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
+    const float y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
+    const float w = (static_cast<float>(rect.w) / W) * 2.0f;
+    const float h = (static_cast<float>(rect.h) / H) * 2.0f * aspect;
 
-}
-void RenderCopyPartEX(Rectangle& rect, Rectangle& source, const MethaneTexture& texture, float rotation) {
+    const float halfW = w / 2.0f;
+    const float halfH = h / 2.0f;
 
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(x + halfW, y - halfH, 0.0f));
+    model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    
+    const float texW = static_cast<float>(texture.w);
+    const float texH = static_cast<float>(texture.h);
+
+    const float u0 = static_cast<float>(source.x) / texW;
+    const float v0 = static_cast<float>(source.y) / texH;
+    const float u1 = static_cast<float>(source.x + source.w) / texW;
+    const float v1 = static_cast<float>(source.y + source.h) / texH;
+
+    const glm::vec4 transformed0 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed1 = model * glm::vec4(-halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed2 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed3 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed4 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
+    const glm::vec4 transformed5 = model * glm::vec4(halfW, -halfH, 0.0f, 1.0f);
+    const float vertex[] = {
+        transformed0.x, transformed0.y , 0.0f , u0, v0,
+        transformed1.x, transformed1.y , 0.0f , u0, v1,
+        transformed2.x, transformed2.y , 0.0f , u1, v0,
+        transformed3.x, transformed3.y , 0.0f , u0, v1,
+        transformed4.x, transformed4.y , 0.0f , u1, v1,
+        transformed5.x, transformed5.y , 0.0f , u1, v0
+    };
+
+    globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
 }
 
 void Renderer::RenderPresent() {
@@ -551,11 +604,11 @@ void Renderer::RenderPresent() {
 }
 
 void Renderer::Clear() {
-    // Odwi¹zanie VAO - bezpieczne praktyka, aby nie modyfikowaæ przypadkowo tego VAO w przysz³oœci
+    // OdwiÄ…zanie VAO - bezpieczne praktyka, aby nie modyfikowaÄ‡ przypadkowo tego VAO w przyszÅ‚oÅ›ci
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    // czyszczenie aby nie by³o wycieków pamiêci nie tworzyæ jak vbo i vao s¹ globalnie zadeklarowane
+    // czyszczenie aby nie byÅ‚o wyciekÃ³w pamiÄ™ci nie tworzyÄ‡ jak vbo i vao sÄ… globalnie zadeklarowane
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
 }
