@@ -47,18 +47,15 @@ class Renderer {
 		static bool Start(unsigned int W , unsigned int H);
 
 		static void RenderRectangleF(const RectangleF & rect, const glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f));
-
 		static void RenderRectangle(const Rectangle& rect, const glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f));
 
 		static void RenderRectangleEX(const Rectangle& rect, const glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f), const float rotation = 0.0f);
-
 		static void RenderRectangleFEX(const RectangleF& rect, const glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f), const float rotation = 0.0f);
 
 		static void RenderCopyF(const RectangleF& rect, const MethaneTexture& texture);
 		static void RenderCopy(const Rectangle& rect, const MethaneTexture& texture);
 
 		static void RenderCopyPartF(const RectangleF& rect, const RectangleF& source, const MethaneTexture& texture);
-
 		static void RenderCopyPart(const Rectangle& rect, const Rectangle& source, const MethaneTexture& texture);
 
 		static void RenderCopyFEX(const RectangleF& rect, const MethaneTexture& texture, const float rotation = 0.0f);

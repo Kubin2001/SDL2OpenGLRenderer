@@ -526,17 +526,19 @@ void Renderer::RenderCopyPartFEX(const RectangleF& rect, const RectangleF& sourc
     const glm::vec4 transformed3 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
     const glm::vec4 transformed4 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
     const glm::vec4 transformed5 = model * glm::vec4(halfW, -halfH, 0.0f, 1.0f);
+
     const float vertex[] = {
         transformed0.x, transformed0.y , 0.0f , u0, v0,
         transformed1.x, transformed1.y , 0.0f , u0, v1,
-        transformed2.x, transformed2.y , 0.0f , u1, v0,
-        transformed3.x, transformed3.y , 0.0f , u0, v1,
+        transformed2.x, transformed2.y , 0.0f , u1, v1,
+
+        transformed3.x, transformed3.y , 0.0f , u0, v0,
         transformed4.x, transformed4.y , 0.0f , u1, v1,
         transformed5.x, transformed5.y , 0.0f , u1, v0
     };
-
     globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
 }
+
 void Renderer::RenderCopyPartEX(const Rectangle& rect, const Rectangle& source, const MethaneTexture& texture, const float rotation) {
     if (Renderer::currentTexture != texture.texture) {
         RenderPresent();
@@ -554,23 +556,26 @@ void Renderer::RenderCopyPartEX(const Rectangle& rect, const Rectangle& source, 
     const float x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
     const float y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
     const float w = (static_cast<float>(rect.w) / W) * 2.0f;
-    const float h = (static_cast<float>(rect.h) / H) * 2.0f * aspect;
+    const float h = (static_cast<float>(rect.h) / H) * 2.0f *aspect;
+
 
     const float halfW = w / 2.0f;
     const float halfH = h / 2.0f;
 
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(x + halfW, y - halfH, 0.0f));
-    model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-
-    
     const float texW = static_cast<float>(texture.w);
     const float texH = static_cast<float>(texture.h);
+
 
     const float u0 = static_cast<float>(source.x) / texW;
     const float v0 = static_cast<float>(source.y) / texH;
     const float u1 = static_cast<float>(source.x + source.w) / texW;
     const float v1 = static_cast<float>(source.y + source.h) / texH;
+
+
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(x + halfW, y - halfH, 0.0f));
+    model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+
 
     const glm::vec4 transformed0 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
     const glm::vec4 transformed1 = model * glm::vec4(-halfW, halfH, 0.0f, 1.0f);
@@ -578,17 +583,21 @@ void Renderer::RenderCopyPartEX(const Rectangle& rect, const Rectangle& source, 
     const glm::vec4 transformed3 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
     const glm::vec4 transformed4 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
     const glm::vec4 transformed5 = model * glm::vec4(halfW, -halfH, 0.0f, 1.0f);
+
+
     const float vertex[] = {
         transformed0.x, transformed0.y , 0.0f , u0, v0,
         transformed1.x, transformed1.y , 0.0f , u0, v1,
-        transformed2.x, transformed2.y , 0.0f , u1, v0,
-        transformed3.x, transformed3.y , 0.0f , u0, v1,
+        transformed2.x, transformed2.y , 0.0f , u1, v1,
+
+        transformed3.x, transformed3.y , 0.0f , u0, v0,
         transformed4.x, transformed4.y , 0.0f , u1, v1,
         transformed5.x, transformed5.y , 0.0f , u1, v0
     };
 
     globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
 }
+
 
 void Renderer::RenderPresent() {
     if (globalVertices.empty()) {

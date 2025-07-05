@@ -121,17 +121,17 @@ int main(int argc, char* argv[]) {
     SDL_Event event;
 
     Rectangle rect{ 0,0,200,200 };
-    Rectangle rect2{ 400,0,200,200 };
+    Rectangle rect2{ 400,40,200,200 };
     Rectangle rect3{ 0,400,200,200 };
     RectangleF rectF{ 0.0f,0.0f,0.5f,0.5f };
     RectangleF rectF2{ -0.5f,-0.5f,0.5f,0.5f };
-    Rectangle sourceRect{ 0,0,200,200 };
+    Rectangle sourceRect{ 0,0,320,320 };
     RectangleF sourceRectF{ -0.5f,-0.5f,0.5f,0.5f };
     Rectangle rightUP{ 400,0,400,300 };
 ;
 
     float counter = 0;
-    while (counter < 100 && running) {
+    while (counter < 200 && running) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
@@ -146,7 +146,10 @@ int main(int argc, char* argv[]) {
         for (size_t i = 0; i < 1000; i++) {
             //Renderer::RenderCopyEX(rect, metTex1,counter);
             //Renderer::RenderCopyF(rectF, metTex2);
-            Renderer::RenderCopyFEX(rectF2, metTex2,counter);
+            //Renderer::RenderCopyFEX(rectF2, metTex1,90);
+            //Renderer::RenderCopyPart(rect, sourceRect, metTex1);
+            Renderer::RenderCopyPartEX(rect2, sourceRect, metTex1,90);
+            Renderer::RenderCopyPartFEX(rectF2, sourceRectF, metTex1, counter);
             //Renderer::RenderRectangleFEX(sourceRectF, color, counter);
             
 
@@ -165,7 +168,7 @@ int main(int argc, char* argv[]) {
         SDL_GL_SwapWindow(window);
     }
 
-    SDL_Delay(10000);
+    SDL_Delay(100000);
 
     SDL_GL_DeleteContext(glContext);
     SDL_DestroyWindow(window);
