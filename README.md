@@ -16,3 +16,6 @@ Simple 2D renderer test to learn SDL2-OpenGL integration
 - Faster rotated texture rendering by about 20 %
 - Experimental RenderCopyPartEX
 - Fixer wrong texture rotation in RenderCopyPartEx
+
+1.04
+- Rotation Rendering is 6 times faster

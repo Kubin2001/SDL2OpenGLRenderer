@@ -128,10 +128,10 @@ int main(int argc, char* argv[]) {
     Rectangle sourceRect{ 0,0,320,320 };
     RectangleF sourceRectF{ -0.5f,-0.5f,0.5f,0.5f };
     Rectangle rightUP{ 400,0,400,300 };
-;
+
 
     float counter = 0;
-    while (counter < 200 && running) {
+    while (counter < 2000 && running) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
@@ -144,13 +144,11 @@ int main(int argc, char* argv[]) {
         auto start = std::chrono::high_resolution_clock::now();
 
         for (size_t i = 0; i < 1000; i++) {
-            //Renderer::RenderCopyEX(rect, metTex1,counter);
-            //Renderer::RenderCopyF(rectF, metTex2);
-            //Renderer::RenderCopyFEX(rectF2, metTex1,90);
-            //Renderer::RenderCopyPart(rect, sourceRect, metTex1);
-            Renderer::RenderCopyPartEX(rect2, sourceRect, metTex1,90);
-            Renderer::RenderCopyPartFEX(rectF2, sourceRectF, metTex1, counter);
-            //Renderer::RenderRectangleFEX(sourceRectF, color, counter);
+            Renderer::RenderCopyPartEX(rect, sourceRect, metTex1,counter);
+            Renderer::RenderCopyPartFEX(rectF, sourceRectF,metTex1, counter);
+            //Renderer::RenderRectangleEX(rect, color,counter);
+            //Renderer::RenderRectangleFEX(rectF, color, counter);
+
             
 
         }

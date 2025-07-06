@@ -26,7 +26,12 @@ std::vector<float> Renderer::globalVertices = {};
 
 unsigned int Renderer::indecies[6] = { 0, 1, 2, //Indeksy 1 trójkąta
                                       0, 2, 3 }; // indeksy 2 trójkąta
-
+glm::vec2 RotateAndTranslate2D(float localX, float localY, const glm::vec2& center, float cosA, float sinA) {
+    return {
+        center.x + localX * cosA - localY * sinA,
+        center.y + localX * sinA + localY * cosA
+    };
+}
 
 bool Renderer::Start(unsigned int W, unsigned int H) {
     Renderer::W = W;
@@ -118,6 +123,7 @@ bool Renderer::Start(unsigned int W, unsigned int H) {
     return true;
 }
 
+
 void Renderer::RenderRectangleF(const RectangleF& rect, const glm::vec3 color) {
     if (Renderer::currentProgram != Renderer::renderRectId) {
         RenderPresent();
@@ -184,31 +190,33 @@ void Renderer::RenderRectangleFEX(const RectangleF& rect, const glm::vec3 color,
         glUseProgram(Renderer::renderRectId);
     }
 
-    // Wierzchołki zdefiniowane względem środka prostokąta
-    const float halfW = rect.w / 2.0f;
-    const float halfH = rect.h / 2.0f;
+    float halfW = rect.w / 2.0f;
+    float halfH = rect.h / 2.0f;
 
-    // Tworzymy macierz modelu (translacja + obrót)
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(rect.x + halfW, rect.y - halfH, 0.0f));
-    model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+    float rad = glm::radians(rotation);
+    float cosA = cosf(rad);
+    float sinA = sinf(rad);
 
-    const glm::vec4 transformed0 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed1 = model * glm::vec4(-halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed2 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed3 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed4 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed5 = model * glm::vec4(halfW, -halfH, 0.0f, 1.0f);
+    glm::vec2 center = { rect.x + halfW, rect.y - halfH };
+
+    glm::vec2 p0 = RotateAndTranslate2D(-halfW, -halfH, center, cosA, sinA);
+    glm::vec2 p1 = RotateAndTranslate2D(-halfW, halfH, center, cosA, sinA);
+    glm::vec2 p2 = RotateAndTranslate2D(halfW, halfH, center, cosA, sinA);
+    glm::vec2 p3 = RotateAndTranslate2D(-halfW, -halfH, center, cosA, sinA);
+    glm::vec2 p4 = RotateAndTranslate2D(halfW, halfH, center, cosA, sinA);
+    glm::vec2 p5 = RotateAndTranslate2D(halfW, -halfH, center, cosA, sinA);
+
     const float vertex[] = {
-        transformed0.x, transformed0.y , 0.0f , color.x , color.y,color.z,
-        transformed1.x, transformed1.y , 0.0f , color.x , color.y,color.z,
-        transformed2.x, transformed2.y , 0.0f , color.x , color.y,color.z,
-        transformed3.x, transformed3.y , 0.0f , color.x , color.y,color.z,
-        transformed4.x, transformed4.y , 0.0f , color.x , color.y,color.z,
-        transformed5.x, transformed5.y , 0.0f , color.x , color.y,color.z
+        p0.x, p0.y, 0.0f, color.x , color.y,color.z,
+        p1.x, p1.y, 0.0f, color.x , color.y,color.z,
+        p2.x, p2.y, 0.0f, color.x , color.y,color.z,
+        p3.x, p3.y, 0.0f, color.x , color.y,color.z,
+        p4.x, p4.y, 0.0f, color.x , color.y,color.z,
+        p5.x, p5.y, 0.0f, color.x , color.y,color.z
     };
-
     globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
+
+
 }
 
 
@@ -240,31 +248,31 @@ void Renderer::RenderRectangleEX(const Rectangle& rect, const glm::vec3 color, c
 
     // Wierzchołki zdefiniowane względem środka prostokąta
     // Wierzchołki zdefiniowane względem środka prostokąta
+
     float halfW = temp.w / 2.0f;
     float halfH = temp.h / 2.0f;
 
-    // Tworzymy macierz modelu (translacja + obrót)
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(temp.x + halfW, temp.y - halfH, 0.0f));
-    model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+    float rad = glm::radians(rotation);
+    float cosA = cosf(rad);
+    float sinA = sinf(rad);
 
+    glm::vec2 center = { temp.x + halfW, temp.y - halfH };
 
+    glm::vec2 p0 = RotateAndTranslate2D(-halfW, -halfH, center, cosA, sinA);
+    glm::vec2 p1 = RotateAndTranslate2D(-halfW, halfH, center, cosA, sinA);
+    glm::vec2 p2 = RotateAndTranslate2D(halfW, halfH, center, cosA, sinA);
+    glm::vec2 p3 = RotateAndTranslate2D(-halfW, -halfH, center, cosA, sinA);
+    glm::vec2 p4 = RotateAndTranslate2D(halfW, halfH, center, cosA, sinA);
+    glm::vec2 p5 = RotateAndTranslate2D(halfW, -halfH, center, cosA, sinA);
 
-    const glm::vec4 transformed0 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed1 = model * glm::vec4(-halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed2 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed3 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed4 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed5 = model * glm::vec4(halfW, -halfH, 0.0f, 1.0f);
     const float vertex[] = {
-        transformed0.x, transformed0.y , 0.0f , color.x , color.y,color.z,
-        transformed1.x, transformed1.y , 0.0f , color.x , color.y,color.z,
-        transformed2.x, transformed2.y , 0.0f , color.x , color.y,color.z,
-        transformed3.x, transformed3.y , 0.0f , color.x , color.y,color.z,
-        transformed4.x, transformed4.y , 0.0f , color.x , color.y,color.z,
-        transformed5.x, transformed5.y , 0.0f , color.x , color.y,color.z
+        p0.x, p0.y, 0.0f, color.x , color.y,color.z,
+        p1.x, p1.y, 0.0f, color.x , color.y,color.z,
+        p2.x, p2.y, 0.0f, color.x , color.y,color.z,
+        p3.x, p3.y, 0.0f, color.x , color.y,color.z,
+        p4.x, p4.y, 0.0f, color.x , color.y,color.z,
+        p5.x, p5.y, 0.0f, color.x , color.y,color.z
     };
-
     globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
 }
 
@@ -427,28 +435,32 @@ void Renderer::RenderCopyFEX(const RectangleF& rect, const MethaneTexture& textu
 
     float halfW = rect.w / 2.0f;
     float halfH = rect.h / 2.0f;
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(rect.x + halfW, rect.y - halfH, 0.0f));
-    model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 
+    float rad = glm::radians(rotation);
+    float cosA = cosf(rad);
+    float sinA = sinf(rad);
 
-    const glm::vec4 transformed0 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed1 = model * glm::vec4(-halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed2 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed3 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed4 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed5 = model * glm::vec4(halfW, -halfH, 0.0f, 1.0f);
+    glm::vec2 center = { rect.x + halfW, rect.y - halfH };
+
+    glm::vec2 p0 = RotateAndTranslate2D(-halfW, -halfH, center, cosA, sinA);
+    glm::vec2 p1 = RotateAndTranslate2D(-halfW, halfH, center, cosA, sinA);
+    glm::vec2 p2 = RotateAndTranslate2D(halfW, halfH, center, cosA, sinA);
+    glm::vec2 p3 = RotateAndTranslate2D(-halfW, -halfH, center, cosA, sinA);
+    glm::vec2 p4 = RotateAndTranslate2D(halfW, halfH, center, cosA, sinA);
+    glm::vec2 p5 = RotateAndTranslate2D(halfW, -halfH, center, cosA, sinA);
+
     const float vertex[] = {
-        transformed0.x, transformed0.y , 0.0f , 0.0f,0.0f,
-        transformed1.x, transformed1.y , 0.0f , 0.0f,1.0f,
-        transformed2.x, transformed2.y , 0.0f , 1.0f,1.0f,
-        transformed3.x, transformed3.y , 0.0f , 0.0f,0.0f,
-        transformed4.x, transformed4.y , 0.0f , 1.0f,1.0f,
-        transformed5.x, transformed5.y , 0.0f , 1.0f,0.0f
+        p0.x, p0.y, 0.0f, 0.0f, 0.0f,
+        p1.x, p1.y, 0.0f, 0.0f, 1.0f,
+        p2.x, p2.y, 0.0f, 1.0f, 1.0f,
+        p3.x, p3.y, 0.0f, 0.0f, 0.0f,
+        p4.x, p4.y, 0.0f, 1.0f, 1.0f,
+        p5.x, p5.y, 0.0f, 1.0f, 0.0f
     };
-
     globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
 }
+
+
 
 void Renderer::RenderCopyEX(const Rectangle& rect, const MethaneTexture& texture, const float rotation) {
     if (Renderer::currentTexture != texture.texture) {
@@ -463,32 +475,36 @@ void Renderer::RenderCopyEX(const Rectangle& rect, const MethaneTexture& texture
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
+
     float aspect = static_cast<float>(H) / static_cast<float>(W);
-    const float x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
-    const float y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
-    const float w = (static_cast<float>(rect.w) / W) * 2.0f;
-    const float h = (static_cast<float>(rect.h) / H) * 2.0f * aspect;
+    float x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
+    float y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
+    float w = (static_cast<float>(rect.w) / W) * 2.0f;
+    float h = (static_cast<float>(rect.h) / H) * 2.0f * aspect;
 
-    const float halfW = w / 2.0f;
-    const float halfH = h / 2.0f;
+    float halfW = w / 2.0f;
+    float halfH = h / 2.0f;
 
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(x + halfW, y - halfH, 0.0f));
-    model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+    float rad = glm::radians(rotation);
+    float cosA = cosf(rad);
+    float sinA = sinf(rad);
 
-    const glm::vec4 transformed0 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed1 = model * glm::vec4(-halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed2 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed3 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed4 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed5 = model * glm::vec4(halfW, -halfH, 0.0f, 1.0f);
+    glm::vec2 center = { x + halfW, y - halfH };
+
+    glm::vec2 p0 = RotateAndTranslate2D(-halfW, -halfH, center, cosA, sinA);
+    glm::vec2 p1 = RotateAndTranslate2D(-halfW, halfH, center, cosA, sinA);
+    glm::vec2 p2 = RotateAndTranslate2D(halfW, halfH, center, cosA, sinA);
+    glm::vec2 p3 = RotateAndTranslate2D(-halfW, -halfH, center, cosA, sinA);
+    glm::vec2 p4 = RotateAndTranslate2D(halfW, halfH, center, cosA, sinA);
+    glm::vec2 p5 = RotateAndTranslate2D(halfW, -halfH, center, cosA, sinA);
+
     const float vertex[] = {
-        transformed0.x, transformed0.y , 0.0f , 0.0f,0.0f,
-        transformed1.x, transformed1.y , 0.0f , 0.0f,1.0f,
-        transformed2.x, transformed2.y , 0.0f , 1.0f,1.0f,
-        transformed3.x, transformed3.y , 0.0f , 0.0f,0.0f,
-        transformed4.x, transformed4.y , 0.0f , 1.0f,1.0f,
-        transformed5.x, transformed5.y , 0.0f , 1.0f,0.0f
+        p0.x, p0.y, 0.0f, 0.0f, 0.0f,
+        p1.x, p1.y, 0.0f, 0.0f, 1.0f,
+        p2.x, p2.y, 0.0f, 1.0f, 1.0f,
+        p3.x, p3.y, 0.0f, 0.0f, 0.0f,
+        p4.x, p4.y, 0.0f, 1.0f, 1.0f,
+        p5.x, p5.y, 0.0f, 1.0f, 0.0f
     };
 
     globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
@@ -508,33 +524,35 @@ void Renderer::RenderCopyPartFEX(const RectangleF& rect, const RectangleF& sourc
         glUseProgram(Renderer::renderCopyId);
     }
 
-
+    ////////
     float halfW = rect.w / 2.0f;
     float halfH = rect.h / 2.0f;
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(rect.x + halfW, rect.y - halfH, 0.0f));
-    model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
 
     const float u0 = source.x;
     const float v0 = source.y;
     const float u1 = source.x + source.w;
     const float v1 = source.y + source.h;
 
-    const glm::vec4 transformed0 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed1 = model * glm::vec4(-halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed2 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed3 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed4 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed5 = model * glm::vec4(halfW, -halfH, 0.0f, 1.0f);
+    float rad = glm::radians(rotation);
+    float cosA = cosf(rad);
+    float sinA = sinf(rad);
+
+    glm::vec2 center = { rect.x + halfW, rect.y - halfH };
+
+    glm::vec2 p0 = RotateAndTranslate2D(-halfW, -halfH, center, cosA, sinA);
+    glm::vec2 p1 = RotateAndTranslate2D(-halfW, halfH, center, cosA, sinA);
+    glm::vec2 p2 = RotateAndTranslate2D(halfW, halfH, center, cosA, sinA);
+    glm::vec2 p3 = RotateAndTranslate2D(-halfW, -halfH, center, cosA, sinA);
+    glm::vec2 p4 = RotateAndTranslate2D(halfW, halfH, center, cosA, sinA);
+    glm::vec2 p5 = RotateAndTranslate2D(halfW, -halfH, center, cosA, sinA);
 
     const float vertex[] = {
-        transformed0.x, transformed0.y , 0.0f , u0, v0,
-        transformed1.x, transformed1.y , 0.0f , u0, v1,
-        transformed2.x, transformed2.y , 0.0f , u1, v1,
-
-        transformed3.x, transformed3.y , 0.0f , u0, v0,
-        transformed4.x, transformed4.y , 0.0f , u1, v1,
-        transformed5.x, transformed5.y , 0.0f , u1, v0
+        p0.x, p0.y, 0.0f, u0, v0,
+        p1.x, p1.y, 0.0f, u0, v1,
+        p2.x, p2.y, 0.0f, u1, v1,
+        p3.x, p3.y, 0.0f, u0, v0,
+        p4.x, p4.y, 0.0f, u1, v1,
+        p5.x, p5.y, 0.0f, u1, v0
     };
     globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
 }
@@ -558,43 +576,38 @@ void Renderer::RenderCopyPartEX(const Rectangle& rect, const Rectangle& source, 
     const float w = (static_cast<float>(rect.w) / W) * 2.0f;
     const float h = (static_cast<float>(rect.h) / H) * 2.0f *aspect;
 
-
-    const float halfW = w / 2.0f;
-    const float halfH = h / 2.0f;
+    float halfW = w / 2.0f;
+    float halfH = h / 2.0f;
 
     const float texW = static_cast<float>(texture.w);
     const float texH = static_cast<float>(texture.h);
-
 
     const float u0 = static_cast<float>(source.x) / texW;
     const float v0 = static_cast<float>(source.y) / texH;
     const float u1 = static_cast<float>(source.x + source.w) / texW;
     const float v1 = static_cast<float>(source.y + source.h) / texH;
 
+    float rad = glm::radians(rotation);
+    float cosA = cosf(rad);
+    float sinA = sinf(rad);
 
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(x + halfW, y - halfH, 0.0f));
-    model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
+    glm::vec2 center = { x + halfW, y - halfH };
 
-
-    const glm::vec4 transformed0 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed1 = model * glm::vec4(-halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed2 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed3 = model * glm::vec4(-halfW, -halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed4 = model * glm::vec4(halfW, halfH, 0.0f, 1.0f);
-    const glm::vec4 transformed5 = model * glm::vec4(halfW, -halfH, 0.0f, 1.0f);
-
+    glm::vec2 p0 = RotateAndTranslate2D(-halfW, -halfH, center, cosA, sinA);
+    glm::vec2 p1 = RotateAndTranslate2D(-halfW, halfH, center, cosA, sinA);
+    glm::vec2 p2 = RotateAndTranslate2D(halfW, halfH, center, cosA, sinA);
+    glm::vec2 p3 = RotateAndTranslate2D(-halfW, -halfH, center, cosA, sinA);
+    glm::vec2 p4 = RotateAndTranslate2D(halfW, halfH, center, cosA, sinA);
+    glm::vec2 p5 = RotateAndTranslate2D(halfW, -halfH, center, cosA, sinA);
 
     const float vertex[] = {
-        transformed0.x, transformed0.y , 0.0f , u0, v0,
-        transformed1.x, transformed1.y , 0.0f , u0, v1,
-        transformed2.x, transformed2.y , 0.0f , u1, v1,
-
-        transformed3.x, transformed3.y , 0.0f , u0, v0,
-        transformed4.x, transformed4.y , 0.0f , u1, v1,
-        transformed5.x, transformed5.y , 0.0f , u1, v0
+        p0.x, p0.y, 0.0f, u0, v0,
+        p1.x, p1.y, 0.0f, u0, v1,
+        p2.x, p2.y, 0.0f, u1, v1,
+        p3.x, p3.y, 0.0f, u0, v0,
+        p4.x, p4.y, 0.0f, u1, v1,
+        p5.x, p5.y, 0.0f, u1, v0
     };
-
     globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
 }
 

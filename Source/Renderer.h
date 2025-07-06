@@ -32,9 +32,9 @@ class Renderer {
 		static unsigned int RenderCopyExTransform;
 		static unsigned int currentTexture;
 		static unsigned int renderRectMatrixLoc;
-		static unsigned int presentType; // 0 normal 1 with matrix
 
 		static std::vector<float> globalVertices;
+
 
 
 	public:
