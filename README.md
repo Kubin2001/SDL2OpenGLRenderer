@@ -19,3 +19,6 @@ Simple 2D renderer test to learn SDL2-OpenGL integration
 
 1.04
 - Rotation Rendering is 6 times faster
+- Alpha Blending Per Texture
+- Better function names
+- Clear Screen function

@@ -16,9 +16,34 @@ struct Rectangle {
 	int h;
 };
 
-struct MethaneTexture {
-	unsigned int w, h, texture;
+struct MethaneColor {
+	unsigned char R, G, B;
+
+	MethaneColor() : R(0), G(0), B(0) {}
+
+	MethaneColor(const unsigned char R, const unsigned char G, const unsigned char B): R(R),G(G),B(B){}
 };
+
+struct MethaneColorF {
+	float R, G, B;
+
+	MethaneColorF() : R(0), G(0), B(0) {}
+
+	MethaneColorF(const float R, const float G, float B) : R(R), G(G), B(B) {}
+};
+
+class MethaneTexture {
+	public:
+		unsigned int w, h, texture;
+		float alpha = 1.0f;
+
+		void SetAlphaBending(const unsigned char A) {
+			alpha = float(A) / 255;
+		}
+};
+
+
+
 
 class Renderer {
 
@@ -32,6 +57,7 @@ class Renderer {
 		static unsigned int RenderCopyExTransform;
 		static unsigned int currentTexture;
 		static unsigned int renderRectMatrixLoc;
+		static unsigned int alphaLoc;
 
 		static std::vector<float> globalVertices;
 
@@ -46,11 +72,13 @@ class Renderer {
 
 		static bool Start(unsigned int W , unsigned int H);
 
-		static void RenderRectangleF(const RectangleF & rect, const glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f));
-		static void RenderRectangle(const Rectangle& rect, const glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f));
+		static void ClearFrame(const unsigned char R, const unsigned char G, const unsigned char B);
 
-		static void RenderRectangleEX(const Rectangle& rect, const glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f), const float rotation = 0.0f);
-		static void RenderRectangleFEX(const RectangleF& rect, const glm::vec3 color = glm::vec3(0.5f, 0.5f, 0.5f), const float rotation = 0.0f);
+		static void RenderRectF(const RectangleF & rect, const MethaneColor& col);
+		static void RenderRect(const Rectangle& rect, const MethaneColor& col);
+
+		static void RenderRectFEX(const RectangleF& rect, const MethaneColor &col, const float rotation);
+		static void RenderRectEX(const Rectangle& rect, const MethaneColor& col, const float rotation);
 
 		static void RenderCopyF(const RectangleF& rect, const MethaneTexture& texture);
 		static void RenderCopy(const Rectangle& rect, const MethaneTexture& texture);
@@ -58,14 +86,13 @@ class Renderer {
 		static void RenderCopyPartF(const RectangleF& rect, const RectangleF& source, const MethaneTexture& texture);
 		static void RenderCopyPart(const Rectangle& rect, const Rectangle& source, const MethaneTexture& texture);
 
-		static void RenderCopyFEX(const RectangleF& rect, const MethaneTexture& texture, const float rotation = 0.0f);
-		static void RenderCopyEX(const Rectangle& rect, const MethaneTexture& texture, const float rotation = 0.0f);
+		static void RenderCopyFEX(const RectangleF& rect, const MethaneTexture& texture, const float rotation);
+		static void RenderCopyEX(const Rectangle& rect, const MethaneTexture& texture, const float rotation);
 
-		static void RenderCopyPartFEX(const RectangleF& rect, const RectangleF& source, const MethaneTexture& texture, const float rotation = 0.0f);
-		static void RenderCopyPartEX(const Rectangle& rect, const Rectangle& source, const MethaneTexture& texture, const float rotation = 0.0f);
+		static void RenderCopyPartFEX(const RectangleF& rect, const RectangleF& source, const MethaneTexture& texture, const float rotation);
+		static void RenderCopyPartEX(const Rectangle& rect, const Rectangle& source, const MethaneTexture& texture, const float rotation);
 
 		static void RenderPresent();
 
 		static void Clear();
-
 };

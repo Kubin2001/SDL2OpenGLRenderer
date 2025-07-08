@@ -120,8 +120,8 @@ int main(int argc, char* argv[]) {
     bool running = true;
     SDL_Event event;
 
-    Rectangle rect{ 0,0,200,200 };
-    Rectangle rect2{ 400,40,200,200 };
+    Rectangle rect{ 400,400,20,20 };
+    Rectangle rect2{ 200,400,100,100 };
     Rectangle rect3{ 0,400,200,200 };
     RectangleF rectF{ 0.0f,0.0f,0.5f,0.5f };
     RectangleF rectF2{ -0.5f,-0.5f,0.5f,0.5f };
@@ -129,28 +129,34 @@ int main(int argc, char* argv[]) {
     RectangleF sourceRectF{ -0.5f,-0.5f,0.5f,0.5f };
     Rectangle rightUP{ 400,0,400,300 };
 
+    MethaneColor col1(255, 255, 255);
+    MethaneColor col2(0, 255, 0);
+
+    metTex1.SetAlphaBending(180);
 
     float counter = 0;
-    while (counter < 2000 && running) {
+    while (counter < 200 && running) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
             }
         }
         color = GenerateRandomColor();
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        Renderer::ClearFrame(40,40,40);
 
         auto start = std::chrono::high_resolution_clock::now();
 
         for (size_t i = 0; i < 1000; i++) {
-            Renderer::RenderCopyPartEX(rect, sourceRect, metTex1,counter);
-            Renderer::RenderCopyPartFEX(rectF, sourceRectF,metTex1, counter);
-            //Renderer::RenderRectangleEX(rect, color,counter);
-            //Renderer::RenderRectangleFEX(rectF, color, counter);
+            //Renderer::RenderCopyPartEX(rect, sourceRect, metTex1,counter);
+            //Renderer::RenderCopyPartFEX(rectF, sourceRectF,metTex1, counter);
+            Renderer::RenderRect(rect, col1);
+            Renderer::RenderRectEX(rect2, col2, counter);
 
+            //Renderer::RenderRect(rect, col1);
+            //Renderer::RenderRectF(rectF, col2);
+            //Renderer::RenderCopy(rect2, metTex2);
+            //Renderer::RenderCopy(rect, metTex1);
             
-
         }
         Renderer::RenderPresent();
 
@@ -165,7 +171,7 @@ int main(int argc, char* argv[]) {
         counter++;
         SDL_GL_SwapWindow(window);
     }
-
+    Renderer::ClearFrame(255, 40, 40);
     SDL_Delay(100000);
 
     SDL_GL_DeleteContext(glContext);

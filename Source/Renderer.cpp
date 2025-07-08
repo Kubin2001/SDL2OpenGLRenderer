@@ -3,7 +3,6 @@
 #include "glm.hpp"
 #include "gtc/type_ptr.hpp"
 #include "gtc/matrix_transform.hpp"
-#include "gtc/type_ptr.hpp"
 #include <iostream>
 
 unsigned int Renderer::VAO = 0;
@@ -20,6 +19,8 @@ unsigned int Renderer::renderRectId = 0;
 unsigned int Renderer::renderRectExId = 0;
 unsigned int Renderer::currentTexture = -1;
 unsigned int Renderer::renderRectMatrixLoc = -1;
+unsigned int Renderer::alphaLoc = 0;
+
 glm::mat4 Renderer::tarnsMatrix = glm::mat4(1.0f);
 
 std::vector<float> Renderer::globalVertices = {};
@@ -116,34 +117,47 @@ bool Renderer::Start(unsigned int W, unsigned int H) {
     Renderer::renderRectExId = ShaderLoader::GetProgram("ShaderProgramEX");
     Renderer::renderCopyExId = ShaderLoader::GetProgram("ShaderProgramRenderCopyEX");
     Renderer::renderRectMatrixLoc = glGetUniformLocation(ShaderLoader::GetProgram("ShaderProgramEX"), "transform");
-
+    
     Renderer::textureLocation = glGetUniformLocation(Renderer::renderCopyId, "texture1");
     Renderer::RenderCopyExTransform = glGetUniformLocation(Renderer::renderCopyExId, "transform");
+
+    Renderer::alphaLoc = glGetUniformLocation(Renderer::renderCopyId, "alpha");
     //globalVertices.reserve(1'000'000);
     return true;
 }
 
+void Renderer::ClearFrame(const unsigned char R, const unsigned char G, const unsigned char B) {
+    const float fR = float(R) / 255;
+    const float fG = float(G) / 255;
+    const float fB = float(B) / 255;
+    glClearColor(fR, fG, fB, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+}
 
-void Renderer::RenderRectangleF(const RectangleF& rect, const glm::vec3 color) {
+void Renderer::RenderRectF(const RectangleF& rect, const MethaneColor& col) {
     if (Renderer::currentProgram != Renderer::renderRectId) {
         RenderPresent();
         Renderer::currentProgram = Renderer::renderRectId;
         glUseProgram(Renderer::renderRectId);
     }
 
+    const float fR = float(col.R) / 255;
+    const float fG = float(col.G) / 255;
+    const float fB = float(col.B) / 255;
+
     float vertices[] = {
-        rect.x,     rect.y - rect.h, 0.0f, color.x, color.y, color.z,
-        rect.x,     rect.y,          0.0f, color.x, color.y, color.z,
-        rect.x + rect.w, rect.y - rect.h, 0.0f, color.x, color.y, color.z,
-        rect.x,     rect.y,          0.0f, color.x, color.y, color.z,
-        rect.x + rect.w, rect.y,     0.0f, color.x, color.y, color.z,
-        rect.x + rect.w, rect.y - rect.h, 0.0f, color.x, color.y, color.z
+        rect.x,     rect.y - rect.h,      0.0f,    fR, fG, fB,
+        rect.x,     rect.y,               0.0f,    fR, fG, fB,
+        rect.x + rect.w, rect.y - rect.h, 0.0f,    fR, fG, fB,
+        rect.x,     rect.y,               0.0f,    fR, fG, fB,
+        rect.x + rect.w, rect.y,          0.0f,    fR, fG, fB,
+        rect.x + rect.w, rect.y - rect.h, 0.0f,    fR, fG, fB,
     };
 
     globalVertices.insert(globalVertices.end(), std::begin(vertices), std::end(vertices));
 }
 
-void Renderer::RenderRectangle(const Rectangle& rect, const glm::vec3 color) {
+void Renderer::RenderRect(const Rectangle& rect, const MethaneColor& col) {
     if (Renderer::currentProgram != Renderer::renderRectId) {
         RenderPresent();
         Renderer::currentProgram = Renderer::renderRectId;
@@ -164,31 +178,34 @@ void Renderer::RenderRectangle(const Rectangle& rect, const glm::vec3 color) {
     //temp.h = (static_cast<float>(rect.h) / H) * 2.0f;
     //std::cout <<temp.x<<"  " << temp.y << "\n";
 
-    const float colR = color.x;
-    const float colG = color.y;
-    const float colB = color.z;
+    const float fR = float(col.R) / 255;
+    const float fG = float(col.G) / 255;
+    const float fB = float(col.B) / 255;
 
 
     // pos.x, pos.y, pos.z,  col.r, col.g, col.b
     float vertices[] = {
-        x,     y - h, 0.0f, color.x, color.y,color.z,
-        x,     y,     0.0f,  color.x, color.y,color.z,
-        x + w, y - h, 0.0f,color.x, color.y,color.z,
-        x,     y,     0.0f,color.x, color.y,color.z,
-        x + w, y,     0.0f,color.x, color.y,color.z,
-        x + w, y - h, 0.0f, color.x, color.y,color.z
+        x,     y - h, 0.0f, fR, fG, fB,
+        x,     y,     0.0f, fR, fG, fB,
+        x + w, y - h, 0.0f, fR, fG, fB,
+        x,     y,     0.0f, fR, fG, fB,
+        x + w, y,     0.0f, fR, fG, fB,
+        x + w, y - h, 0.0f, fR, fG, fB,
     };
 
     globalVertices.insert(globalVertices.end(), std::begin(vertices), std::end(vertices));
 }
 
-void Renderer::RenderRectangleFEX(const RectangleF& rect, const glm::vec3 color, const float rotation) {
+void Renderer::RenderRectFEX(const RectangleF& rect, const MethaneColor &col, const float rotation) {
     // Włączenie atrybututów iwerzchołków
     if (Renderer::currentProgram != Renderer::renderRectId) {
         RenderPresent();
         Renderer::currentProgram = Renderer::renderRectId;
         glUseProgram(Renderer::renderRectId);
     }
+    const float fR = float(col.R) / 255;
+    const float fG = float(col.G) / 255;
+    const float fB = float(col.B) / 255;
 
     float halfW = rect.w / 2.0f;
     float halfH = rect.h / 2.0f;
@@ -207,20 +224,18 @@ void Renderer::RenderRectangleFEX(const RectangleF& rect, const glm::vec3 color,
     glm::vec2 p5 = RotateAndTranslate2D(halfW, -halfH, center, cosA, sinA);
 
     const float vertex[] = {
-        p0.x, p0.y, 0.0f, color.x , color.y,color.z,
-        p1.x, p1.y, 0.0f, color.x , color.y,color.z,
-        p2.x, p2.y, 0.0f, color.x , color.y,color.z,
-        p3.x, p3.y, 0.0f, color.x , color.y,color.z,
-        p4.x, p4.y, 0.0f, color.x , color.y,color.z,
-        p5.x, p5.y, 0.0f, color.x , color.y,color.z
+        p0.x, p0.y, 0.0f, fR, fG, fB,
+        p1.x, p1.y, 0.0f, fR, fG, fB,
+        p2.x, p2.y, 0.0f, fR, fG, fB,
+        p3.x, p3.y, 0.0f, fR, fG, fB,
+        p4.x, p4.y, 0.0f, fR, fG, fB,
+        p5.x, p5.y, 0.0f, fR, fG, fB,
     };
     globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
-
-
 }
 
 
-void Renderer::RenderRectangleEX(const Rectangle& rect, const glm::vec3 color, const float rotation) {
+void Renderer::RenderRectEX(const Rectangle& rect, const MethaneColor &col, const float rotation) {
     // Włączenie atrybututów iwerzchołków
     if (Renderer::currentProgram != Renderer::renderRectId) {
         RenderPresent();
@@ -252,6 +267,10 @@ void Renderer::RenderRectangleEX(const Rectangle& rect, const glm::vec3 color, c
     float halfW = temp.w / 2.0f;
     float halfH = temp.h / 2.0f;
 
+    const float fR = float(col.R) / 255;
+    const float fG = float(col.G) / 255;
+    const float fB = float(col.B) / 255;
+
     float rad = glm::radians(rotation);
     float cosA = cosf(rad);
     float sinA = sinf(rad);
@@ -266,12 +285,12 @@ void Renderer::RenderRectangleEX(const Rectangle& rect, const glm::vec3 color, c
     glm::vec2 p5 = RotateAndTranslate2D(halfW, -halfH, center, cosA, sinA);
 
     const float vertex[] = {
-        p0.x, p0.y, 0.0f, color.x , color.y,color.z,
-        p1.x, p1.y, 0.0f, color.x , color.y,color.z,
-        p2.x, p2.y, 0.0f, color.x , color.y,color.z,
-        p3.x, p3.y, 0.0f, color.x , color.y,color.z,
-        p4.x, p4.y, 0.0f, color.x , color.y,color.z,
-        p5.x, p5.y, 0.0f, color.x , color.y,color.z
+        p0.x, p0.y, 0.0f, fR, fG, fB,
+        p1.x, p1.y, 0.0f, fR, fG, fB,
+        p2.x, p2.y, 0.0f, fR, fG, fB,
+        p3.x, p3.y, 0.0f, fR, fG, fB,
+        p4.x, p4.y, 0.0f, fR, fG, fB,
+        p5.x, p5.y, 0.0f, fR, fG, fB,
     };
     globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
 }
@@ -330,6 +349,8 @@ void Renderer::RenderCopy(const Rectangle& rect, const MethaneTexture& texture){
         glUseProgram(Renderer::renderCopyId);
     }
 
+    glUniform1f(alphaLoc, texture.alpha);
+    
 
     //    // pos.x, pos.y, pos.z, tex.u, tex.v
     float verticles[30] = {
@@ -356,6 +377,7 @@ void Renderer::RenderCopyPartF(const RectangleF& rect, const RectangleF& source,
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
+    glUniform1f(alphaLoc, texture.alpha);
 
     const float u0 = source.x;
     const float v0 = source.y;
@@ -393,6 +415,7 @@ void Renderer::RenderCopyPart(const Rectangle& rect, const Rectangle& source, co
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
+    glUniform1f(alphaLoc, texture.alpha);
 
     RectangleF tempSource;
 
@@ -431,7 +454,7 @@ void Renderer::RenderCopyFEX(const RectangleF& rect, const MethaneTexture& textu
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
-
+    glUniform1f(alphaLoc, texture.alpha);
 
     float halfW = rect.w / 2.0f;
     float halfH = rect.h / 2.0f;
@@ -475,6 +498,7 @@ void Renderer::RenderCopyEX(const Rectangle& rect, const MethaneTexture& texture
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
+    glUniform1f(alphaLoc, texture.alpha);
 
     float aspect = static_cast<float>(H) / static_cast<float>(W);
     float x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
@@ -523,6 +547,7 @@ void Renderer::RenderCopyPartFEX(const RectangleF& rect, const RectangleF& sourc
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
+    glUniform1f(alphaLoc, texture.alpha);
 
     ////////
     float halfW = rect.w / 2.0f;
@@ -570,6 +595,8 @@ void Renderer::RenderCopyPartEX(const Rectangle& rect, const Rectangle& source, 
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
+    glUniform1f(alphaLoc, texture.alpha);
+
     float aspect = static_cast<float>(H) / static_cast<float>(W);
     const float x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
     const float y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
@@ -633,4 +660,6 @@ void Renderer::Clear() {
     // czyszczenie aby nie było wycieków pamięci nie tworzyć jak vbo i vao są globalnie zadeklarowane
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
+
+    glDeleteBuffers(1, &EBO);
 }
