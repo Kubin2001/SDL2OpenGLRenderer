@@ -13,63 +13,6 @@
 #include <chrono>
 #include <random>
 
-SDL_Surface* FlipSurfaceVertical(SDL_Surface* surface) {
-    SDL_Surface* flipped = SDL_CreateRGBSurfaceWithFormat(0, surface->w, surface->h,
-        surface->format->BitsPerPixel,
-        surface->format->format);
-    int pitch = surface->pitch;
-    uint8_t* srcPixels = (uint8_t*)surface->pixels;
-    uint8_t* dstPixels = (uint8_t*)flipped->pixels;
-
-    for (int y = 0; y < surface->h; ++y) {
-        memcpy(&dstPixels[y * pitch],
-            &srcPixels[(surface->h - 1 - y) * pitch],
-            pitch);
-    }
-
-    return flipped;
-}
-
-MethaneTexture LoadMethaneTexture(const char* path) {
-    unsigned int texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); //rozmywa piksele
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //œwietne dla pixel art
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-    SDL_Surface* surf = IMG_Load(path);
-
-    MethaneTexture metTex;
-    metTex.texture = texture;
-    if (!surf) {
-        std::cout << "Failed to load image: " << IMG_GetError() << std::endl;
-    }
-    else {
-        SDL_Surface* formatted = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_RGBA32, 0); // Aby siê nie crashowa³o jak jest z³y format
-        SDL_FreeSurface(surf);
-        surf = formatted;
-        surf = FlipSurfaceVertical(surf);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surf->w, surf->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels); // RGBA dla png
-        metTex.w = surf->w;
-        metTex.h = surf->h;
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    SDL_FreeSurface(surf);
-    std::cout << "Textura za³adowana: " << metTex.texture << " " << metTex.w << " " << metTex.h << "\n";
-
-    return metTex;
-}
-
-void PrintVec3(const glm::vec3 vec) {
-    std::cout << vec.x << " " << vec.y << " " << vec.z << " \n";
-}
-
 glm::vec3 GenerateRandomColor() {
     static std::random_device rd;
     static std::mt19937 gen(rd());
@@ -109,28 +52,29 @@ int main(int argc, char* argv[]) {
 
     
 
-    MethaneTexture metTex1 = LoadMethaneTexture("Textures/testPNG.png");
-    MethaneTexture metTex2 = LoadMethaneTexture("Textures/tree.png");
+    MT::Texture metTex1 = MT::LoadTexture("Textures/testPNG.png");
+    MT::Texture metTex2 = MT::LoadTexture("Textures/tree.png");
 
 
     //
-    Renderer::Start(800,600);
+    MT::Renderer ren;
+    ren.Start(800, 600);
 
     glm::vec3 color{ 1.0f,0.0f,0.0f };
     bool running = true;
     SDL_Event event;
 
-    Rectangle rect{ 400,400,20,20 };
-    Rectangle rect2{ 200,400,100,100 };
-    Rectangle rect3{ 0,400,200,200 };
-    RectangleF rectF{ 0.0f,0.0f,0.5f,0.5f };
-    RectangleF rectF2{ -0.5f,-0.5f,0.5f,0.5f };
-    Rectangle sourceRect{ 0,0,320,320 };
-    RectangleF sourceRectF{ -0.5f,-0.5f,0.5f,0.5f };
-    Rectangle rightUP{ 400,0,400,300 };
+    MT::Rect rect{ 400,400,20,20 };
+    MT::Rect rect2{ 200,400,100,100 };
+    MT::Rect rect3{ 0,400,200,200 };
+    MT::RectF rectF{ 0.0f,0.0f,0.5f,0.5f };
+    MT::RectF rectF2{ -0.5f,-0.5f,0.5f,0.5f };
+    MT::Rect sourceRect{ 0,0,320,320 };
+    MT::RectF sourceRectF{ -0.5f,-0.5f,0.5f,0.5f };
+    MT::Rect rightUP{ 400,0,400,300 };
 
-    MethaneColor col1(255, 255, 255);
-    MethaneColor col2(0, 255, 0);
+    MT::Color col1(255, 255, 255);
+    MT::Color col2(0, 255, 0);
 
     metTex1.SetAlphaBending(180);
 
@@ -142,15 +86,15 @@ int main(int argc, char* argv[]) {
             }
         }
         color = GenerateRandomColor();
-        Renderer::ClearFrame(40,40,40);
+        ren.ClearFrame(40,40,40);
 
         auto start = std::chrono::high_resolution_clock::now();
 
         for (size_t i = 0; i < 1000; i++) {
             //Renderer::RenderCopyPartEX(rect, sourceRect, metTex1,counter);
             //Renderer::RenderCopyPartFEX(rectF, sourceRectF,metTex1, counter);
-            Renderer::RenderRect(rect, col1);
-            Renderer::RenderRectEX(rect2, col2, counter);
+            ren.RenderRect(rect, col1);
+            ren.RenderRectEX(rect2, col2, counter);
 
             //Renderer::RenderRect(rect, col1);
             //Renderer::RenderRectF(rectF, col2);
@@ -158,7 +102,7 @@ int main(int argc, char* argv[]) {
             //Renderer::RenderCopy(rect, metTex1);
             
         }
-        Renderer::RenderPresent();
+        ren.RenderPresent();
 
 
         auto end = std::chrono::high_resolution_clock::now();
@@ -171,7 +115,7 @@ int main(int argc, char* argv[]) {
         counter++;
         SDL_GL_SwapWindow(window);
     }
-    Renderer::ClearFrame(255, 40, 40);
+    ren.ClearFrame(255, 40, 40);
     SDL_Delay(100000);
 
     SDL_GL_DeleteContext(glContext);

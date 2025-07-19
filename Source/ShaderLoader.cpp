@@ -21,36 +21,58 @@ std::string LoadShaderFile(const char* fileName) {
 
         std::cout << "Shader: " << fileName << " loaded...\n";
     }
-    else
-    {
+    else{
         std::cout << "Error file: " << fileName << " not openned\n";
     }
     file.close();
 
     return ret;
-
 }
 
 void ShaderLoader::LoadShader(const std::string& name, const std::string& path, GLenum shaderType) {
     //Compile Fragment Shader
-    unsigned int fragmentShader;
-    fragmentShader = glCreateShader(shaderType);
-    std::string fragShaderSrc = LoadShaderFile(path.c_str());
-    const GLchar* fragShader = fragShaderSrc.c_str();
-    glShaderSource(fragmentShader, 1, &fragShader, nullptr);
+    unsigned int shaderID;
+    shaderID = glCreateShader(shaderType);
+    std::string shaderSrc = LoadShaderFile(path.c_str());
+    const GLchar* shader = shaderSrc.c_str();
+    glShaderSource(shaderID, 1, &shader, nullptr);
 
-    glCompileShader(fragmentShader);
+    glCompileShader(shaderID);
 
     //catch compile error
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success);
 
     if (!success) {
-        glGetShaderInfoLog(fragmentShader, 512, nullptr, infoLog);
+        glGetShaderInfoLog(shaderID, 512, nullptr, infoLog);
 
         std::cout << "Error with vertex shader compilation: \n" << infoLog << "\n";
     }
     else{
-        shaders[name] = fragmentShader;
+        shaders[name] = shaderID;
+        std::cout << "Compilation succesfull\n";
+    }
+}
+
+void ShaderLoader::LoadShaderStr(const std::string& name, const std::string& shaderText, GLenum shaderType) {
+    //Compile Fragment Shader
+    unsigned int shaderID;
+    shaderID = glCreateShader(shaderType);
+    std::string shaderSrc = shaderText;
+    const GLchar* shader = shaderSrc.c_str();
+    glShaderSource(shaderID, 1, &shader, nullptr);
+
+    glCompileShader(shaderID);
+
+    //catch compile error
+    glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success);
+
+    if (!success) {
+        glGetShaderInfoLog(shaderID, 512, nullptr, infoLog);
+
+        std::cout << "Error with vertex shader compilation: \n" << infoLog << "\n";
+    }
+    else {
+        shaders[name] = shaderID;
         std::cout << "Compilation succesfull\n";
     }
 }
@@ -62,7 +84,6 @@ unsigned int& ShaderLoader::GetShader(const std::string& name) {
     else{
         std::cout << "Shader not found\n";
     }
-
 }
 
 
@@ -73,8 +94,7 @@ void ShaderLoader::CreateShaderProgram(std::vector<std::string> &names, const st
             return;
         }
     }
-    
-
+   
     unsigned int shaderProgram = 0;
 
     shaderProgram = glCreateProgram();

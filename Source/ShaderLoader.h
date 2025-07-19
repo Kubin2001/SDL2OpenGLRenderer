@@ -16,6 +16,8 @@ class ShaderLoader {
 	public:
 		static void LoadShader(const std::string& name, const std::string& path, GLenum shaderType);
 
+		static void LoadShaderStr(const std::string& name, const std::string& shaderText, GLenum shaderType);
+
 		static unsigned int& GetShader(const std::string& name);
 
 		static void CreateShaderProgram(std::vector<std::string> &names, const std::string& programName);

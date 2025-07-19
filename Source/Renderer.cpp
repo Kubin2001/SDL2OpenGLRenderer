@@ -4,29 +4,63 @@
 #include "gtc/type_ptr.hpp"
 #include "gtc/matrix_transform.hpp"
 #include <iostream>
+#include <SDL.h>
+#include <SDL_image.h>
+SDL_Surface* FlipSurfaceVertical(SDL_Surface* surface) {
+    SDL_Surface* flipped = SDL_CreateRGBSurfaceWithFormat(0, surface->w, surface->h,
+        surface->format->BitsPerPixel,
+        surface->format->format);
+    int pitch = surface->pitch;
+    uint8_t* srcPixels = (uint8_t*)surface->pixels;
+    uint8_t* dstPixels = (uint8_t*)flipped->pixels;
 
-unsigned int Renderer::VAO = 0;
-unsigned int Renderer::VBO = 0;
-unsigned int Renderer::EBO = 0;
-unsigned int Renderer::W = 100;
-unsigned int Renderer::H = 100;
-unsigned int Renderer::currentProgram = 0;
-unsigned int Renderer::textureLocation = 0;
-unsigned int Renderer::RenderCopyExTransform;
-unsigned int Renderer::renderCopyId = 0;
-unsigned int Renderer::renderCopyExId = 0;
-unsigned int Renderer::renderRectId = 0;
-unsigned int Renderer::renderRectExId = 0;
-unsigned int Renderer::currentTexture = -1;
-unsigned int Renderer::renderRectMatrixLoc = -1;
-unsigned int Renderer::alphaLoc = 0;
+    for (int y = 0; y < surface->h; ++y) {
+        memcpy(&dstPixels[y * pitch],
+            &srcPixels[(surface->h - 1 - y) * pitch],
+            pitch);
+    }
+    return flipped;
+}
 
-glm::mat4 Renderer::tarnsMatrix = glm::mat4(1.0f);
 
-std::vector<float> Renderer::globalVertices = {};
+MT::Texture MT::LoadTexture(const char* path) {
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
 
-unsigned int Renderer::indecies[6] = { 0, 1, 2, //Indeksy 1 trójkąta
-                                      0, 2, 3 }; // indeksy 2 trójkąta
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); //rozmywa piksele
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //świetne dla pixel art
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    SDL_Surface* surf = IMG_Load(path);
+
+    MT::Texture metTex;
+    metTex.texture = texture;
+    if (!surf) {
+        std::cout << "Failed to load image: " << IMG_GetError() << std::endl;
+    }
+    else {
+        SDL_Surface* formatted = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_RGBA32, 0); // Aby się nie crashowało jak jest zły format
+        SDL_FreeSurface(surf);
+        surf = formatted;
+        surf = FlipSurfaceVertical(surf);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surf->w, surf->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels); // RGBA dla png
+        metTex.w = surf->w;
+        metTex.h = surf->h;
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    SDL_FreeSurface(surf);
+    std::cout << "Textura załadowana: " << metTex.texture << " " << metTex.w << " " << metTex.h << "\n";
+
+    return metTex;
+}
+
+
+
 glm::vec2 RotateAndTranslate2D(float localX, float localY, const glm::vec2& center, float cosA, float sinA) {
     return {
         center.x + localX * cosA - localY * sinA,
@@ -34,7 +68,7 @@ glm::vec2 RotateAndTranslate2D(float localX, float localY, const glm::vec2& cent
     };
 }
 
-bool Renderer::Start(unsigned int W, unsigned int H) {
+bool MT::Renderer::Start(unsigned int W, unsigned int H) {
     Renderer::W = W;
     Renderer::H = H;
     // Deklaracja zmiennych dla Vertex Array Object (VAO) i Vertex Buffer Object (VBO)
@@ -44,18 +78,12 @@ bool Renderer::Start(unsigned int W, unsigned int H) {
     // Generowanie VBO (Vertex Buffer Object) - bufor przechowujący dane wierzchołków
     glGenBuffers(1, &VBO);
 
-    //Generowanie ebo aby nie musieć używać 6 wieżchołków
-    glGenBuffers(1, &EBO);
-
     // Bindowanie VAO - od tego momentu wszystkie operacje na VAO będą dotyczyć tego obiektu
     glBindVertexArray(VAO);
 
     // Bindowanie VBO - od tego momentu wszystkie operacje na VBO będą dotyczyć tego bufora
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-    //Ustawnianie ebo
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indecies), indecies, GL_STATIC_DRAW);
 
     // Konfiguracja atrybutu wierzchołka - mówi OpenGL, jak interpretować dane w buforze
     // 0 - indeks atrybutu (w shaderze odpowiada location = 0)
@@ -83,8 +111,34 @@ bool Renderer::Start(unsigned int W, unsigned int H) {
 
 
     // Przyśpieszacze
-    ShaderLoader::LoadShader("VertexShader", "shaders/vertex_core.glsl", GL_VERTEX_SHADER);
-    ShaderLoader::LoadShader("FragmentShader", "shaders/fragment_core.glsl", GL_FRAGMENT_SHADER);
+    const std::string vertexShaderStr = R"glsl(
+    #version 330 core
+    layout(location = 0) in vec3 aPos;
+    layout(location = 1) in vec3 aColor;
+
+        out vec3 ourColor;
+
+        void main() {
+            gl_Position = vec4(aPos, 1.0);
+            ourColor = aColor;
+        }
+    )glsl";
+
+    const std::string fragmentShaderStr = R"glsl(
+    #version 330 core
+
+    out vec4 FragColor;
+
+    in vec3 ourColor;
+
+    void main(){
+	    //FragColor = vec4(1.0f, 0.2f, 0.6f, 1.0f);
+	    FragColor = vec4(ourColor,1.0);
+    }
+    )glsl";
+
+    ShaderLoader::LoadShaderStr("VertexShader", vertexShaderStr, GL_VERTEX_SHADER);
+    ShaderLoader::LoadShaderStr("FragmentShader", fragmentShaderStr, GL_FRAGMENT_SHADER);
 
     ShaderLoader::LoadShader("VertexShaderEX", "shaders/vertex_core_ex.glsl", GL_VERTEX_SHADER);
     ShaderLoader::LoadShader("FragmentShaderEX", "shaders/fragment_core_ex.glsl", GL_FRAGMENT_SHADER);
@@ -126,7 +180,7 @@ bool Renderer::Start(unsigned int W, unsigned int H) {
     return true;
 }
 
-void Renderer::ClearFrame(const unsigned char R, const unsigned char G, const unsigned char B) {
+void MT::Renderer::ClearFrame(const unsigned char R, const unsigned char G, const unsigned char B) {
     const float fR = float(R) / 255;
     const float fG = float(G) / 255;
     const float fB = float(B) / 255;
@@ -134,7 +188,7 @@ void Renderer::ClearFrame(const unsigned char R, const unsigned char G, const un
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void Renderer::RenderRectF(const RectangleF& rect, const MethaneColor& col) {
+void MT::Renderer::RenderRectF(const RectF& rect, const Color& col) {
     if (Renderer::currentProgram != Renderer::renderRectId) {
         RenderPresent();
         Renderer::currentProgram = Renderer::renderRectId;
@@ -157,7 +211,7 @@ void Renderer::RenderRectF(const RectangleF& rect, const MethaneColor& col) {
     globalVertices.insert(globalVertices.end(), std::begin(vertices), std::end(vertices));
 }
 
-void Renderer::RenderRect(const Rectangle& rect, const MethaneColor& col) {
+void MT::Renderer::RenderRect(const Rect& rect, const Color& col) {
     if (Renderer::currentProgram != Renderer::renderRectId) {
         RenderPresent();
         Renderer::currentProgram = Renderer::renderRectId;
@@ -196,7 +250,7 @@ void Renderer::RenderRect(const Rectangle& rect, const MethaneColor& col) {
     globalVertices.insert(globalVertices.end(), std::begin(vertices), std::end(vertices));
 }
 
-void Renderer::RenderRectFEX(const RectangleF& rect, const MethaneColor &col, const float rotation) {
+void MT::Renderer::RenderRectFEX(const RectF& rect, const Color &col, const float rotation) {
     // Włączenie atrybututów iwerzchołków
     if (Renderer::currentProgram != Renderer::renderRectId) {
         RenderPresent();
@@ -235,7 +289,7 @@ void Renderer::RenderRectFEX(const RectangleF& rect, const MethaneColor &col, co
 }
 
 
-void Renderer::RenderRectEX(const Rectangle& rect, const MethaneColor &col, const float rotation) {
+void MT::Renderer::RenderRectEX(const Rect& rect, const Color &col, const float rotation) {
     // Włączenie atrybututów iwerzchołków
     if (Renderer::currentProgram != Renderer::renderRectId) {
         RenderPresent();
@@ -243,7 +297,7 @@ void Renderer::RenderRectEX(const Rectangle& rect, const MethaneColor &col, cons
         glUseProgram(Renderer::renderRectId);
     }
 
-    RectangleF temp;
+    RectF temp;
     // -1.0f dlatego że nieznormalizowana jest od -1.0 a nie 0.0
     // * 2.0f dlatego że w innym wypadku ekran byłby traktowany jakby miał powójną szerokość
     float aspect = static_cast<float>(H) / static_cast<float>(W);
@@ -297,7 +351,7 @@ void Renderer::RenderRectEX(const Rectangle& rect, const MethaneColor &col, cons
 
 
 
-void Renderer::RenderCopyF(const RectangleF& rect, const MethaneTexture& texture) {
+void MT::Renderer::RenderCopyF(const RectF& rect, const Texture& texture) {
     // Włączenie atrybututów iwerzchołków
     if (Renderer::currentTexture != texture.texture) {
         RenderPresent();
@@ -329,7 +383,7 @@ void Renderer::RenderCopyF(const RectangleF& rect, const MethaneTexture& texture
 
 }
 
-void Renderer::RenderCopy(const Rectangle& rect, const MethaneTexture& texture){
+void MT::Renderer::RenderCopy(const Rect& rect, const Texture& texture){
     const float x = (rect.x / static_cast<float>(W)) * 2.0f - 1.0f;
     const float y = 1.0f - (rect.y / static_cast<float>(H)) * 2.0f;
     const float w = (rect.w / static_cast<float>(W)) * 2.0f;
@@ -364,7 +418,7 @@ void Renderer::RenderCopy(const Rectangle& rect, const MethaneTexture& texture){
     globalVertices.insert(globalVertices.end(), std::begin(verticles), std::end(verticles));
 }
 
-void Renderer::RenderCopyPartF(const RectangleF& rect, const RectangleF& source, const MethaneTexture& texture) {
+void MT::Renderer::RenderCopyPartF(const RectF& rect, const RectF& source, const Texture& texture) {
     if (Renderer::currentTexture != texture.texture) {
         RenderPresent();
         glActiveTexture(GL_TEXTURE0);
@@ -396,7 +450,7 @@ void Renderer::RenderCopyPartF(const RectangleF& rect, const RectangleF& source,
     globalVertices.insert(globalVertices.end(), std::begin(verticles), std::end(verticles));
 }
 
-void Renderer::RenderCopyPart(const Rectangle& rect, const Rectangle& source, const MethaneTexture &texture) {
+void MT::Renderer::RenderCopyPart(const Rect& rect, const Rect& source, const Texture &texture) {
     const float x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
     const float y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
     const float w = (static_cast<float>(rect.w) / W) * 2.0f;
@@ -417,7 +471,7 @@ void Renderer::RenderCopyPart(const Rectangle& rect, const Rectangle& source, co
     }
     glUniform1f(alphaLoc, texture.alpha);
 
-    RectangleF tempSource;
+    RectF tempSource;
 
     tempSource.x = static_cast<float>(source.x) / texture.w;
     tempSource.y = static_cast<float>(source.y) / texture.h;
@@ -441,7 +495,7 @@ void Renderer::RenderCopyPart(const Rectangle& rect, const Rectangle& source, co
     globalVertices.insert(globalVertices.end(), std::begin(verticles), std::end(verticles));
 }
 
-void Renderer::RenderCopyFEX(const RectangleF& rect, const MethaneTexture& texture, const float rotation) {
+void MT::Renderer::RenderCopyFEX(const RectF& rect, const Texture& texture, const float rotation) {
     if (Renderer::currentTexture != texture.texture) {
         RenderPresent();
         glActiveTexture(GL_TEXTURE0);
@@ -485,7 +539,7 @@ void Renderer::RenderCopyFEX(const RectangleF& rect, const MethaneTexture& textu
 
 
 
-void Renderer::RenderCopyEX(const Rectangle& rect, const MethaneTexture& texture, const float rotation) {
+void MT::Renderer::RenderCopyEX(const Rect& rect, const Texture& texture, const float rotation) {
     if (Renderer::currentTexture != texture.texture) {
         RenderPresent();
         glActiveTexture(GL_TEXTURE0);
@@ -534,7 +588,7 @@ void Renderer::RenderCopyEX(const Rectangle& rect, const MethaneTexture& texture
     globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
 }
 
-void Renderer::RenderCopyPartFEX(const RectangleF& rect, const RectangleF& source, const MethaneTexture& texture, const float rotation) {
+void MT::Renderer::RenderCopyPartFEX(const RectF& rect, const RectF& source, const Texture& texture, const float rotation) {
     if (Renderer::currentTexture != texture.texture) {
         RenderPresent();
         glActiveTexture(GL_TEXTURE0);
@@ -582,7 +636,7 @@ void Renderer::RenderCopyPartFEX(const RectangleF& rect, const RectangleF& sourc
     globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
 }
 
-void Renderer::RenderCopyPartEX(const Rectangle& rect, const Rectangle& source, const MethaneTexture& texture, const float rotation) {
+void MT::Renderer::RenderCopyPartEX(const Rect& rect, const Rect& source, const Texture& texture, const float rotation) {
     if (Renderer::currentTexture != texture.texture) {
         RenderPresent();
         glActiveTexture(GL_TEXTURE0);
@@ -639,7 +693,7 @@ void Renderer::RenderCopyPartEX(const Rectangle& rect, const Rectangle& source, 
 }
 
 
-void Renderer::RenderPresent() {
+void MT::Renderer::RenderPresent() {
     if (globalVertices.empty()) {
         return;
     }  
@@ -652,7 +706,7 @@ void Renderer::RenderPresent() {
     globalVertices.clear();
 }
 
-void Renderer::Clear() {
+void MT::Renderer::Clear() {
     // Odwiązanie VAO - bezpieczne praktyka, aby nie modyfikować przypadkowo tego VAO w przyszłości
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -660,6 +714,4 @@ void Renderer::Clear() {
     // czyszczenie aby nie było wycieków pamięci nie tworzyć jak vbo i vao są globalnie zadeklarowane
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
-
-    glDeleteBuffers(1, &EBO);
 }

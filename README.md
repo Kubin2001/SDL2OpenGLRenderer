@@ -22,3 +22,6 @@ Simple 2D renderer test to learn SDL2-OpenGL integration
 - Alpha Blending Per Texture
 - Better function names
 - Clear Screen function
+
+1.05
+- Entire architecture has been changed
