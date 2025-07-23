@@ -22,6 +22,24 @@ SDL_Surface* FlipSurfaceVertical(SDL_Surface* surface) {
     return flipped;
 }
 
+SDL_GLContext MT::Innit(SDL_Window *window) {
+
+    SDL_GLContext context = SDL_GL_CreateContext(window);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
+    
+    if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
+        std::cerr << "Failed to initialize GLAD\n";
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        throw std::runtime_error("Failed to initialize GLAD");
+    }
+
+    
+    return context;
+}
 
 MT::Texture MT::LoadTexture(const char* path) {
     unsigned int texture;
@@ -59,8 +77,6 @@ MT::Texture MT::LoadTexture(const char* path) {
     return metTex;
 }
 
-
-
 glm::vec2 RotateAndTranslate2D(float localX, float localY, const glm::vec2& center, float cosA, float sinA) {
     return {
         center.x + localX * cosA - localY * sinA,
@@ -68,9 +84,10 @@ glm::vec2 RotateAndTranslate2D(float localX, float localY, const glm::vec2& cent
     };
 }
 
-bool MT::Renderer::Start(unsigned int W, unsigned int H) {
-    Renderer::W = W;
-    Renderer::H = H;
+bool MT::Renderer::Start(SDL_Window* window, SDL_GLContext context) {
+
+    SDL_GL_GetDrawableSize(window, &W, &H);
+    this->context = context;
     // Deklaracja zmiennych dla Vertex Array Object (VAO) i Vertex Buffer Object (VBO)
     // Generowanie VAO (Vertex Array Object) - obiekt przechowujący konfigurację atrybutów wierzchołków
     glGenVertexArrays(1, &VAO);
@@ -107,73 +124,93 @@ bool MT::Renderer::Start(unsigned int W, unsigned int H) {
     glEnableVertexAttribArray(2);
     glEnableVertexAttribArray(3);
 
+    if (!ShaderLoader::IsProgram("ShaderProgram")) {
+        const std::string vertexShaderStr = R"glsl(
+        #version 330 core
+        layout(location = 0) in vec3 aPos;
+        layout(location = 1) in vec3 aColor;
+
+            out vec3 ourColor;
+
+            void main() {
+                gl_Position = vec4(aPos, 1.0);
+                ourColor = aColor;
+            }
+        )glsl";
+
+            const std::string fragmentShaderStr = R"glsl(
+        #version 330 core
+
+        out vec4 FragColor;
+
+        in vec3 ourColor;
+
+        void main(){
+	        FragColor = vec4(ourColor,1.0);
+        }
+        )glsl";
 
 
+        ShaderLoader::LoadShaderStr("VertexShader", vertexShaderStr, GL_VERTEX_SHADER);
+        ShaderLoader::LoadShaderStr("FragmentShader", fragmentShaderStr, GL_FRAGMENT_SHADER);
 
-    // Przyśpieszacze
-    const std::string vertexShaderStr = R"glsl(
-    #version 330 core
-    layout(location = 0) in vec3 aPos;
-    layout(location = 1) in vec3 aColor;
+        std::vector<std::string> names = { "VertexShader" ,"FragmentShader" };
+        ShaderLoader::CreateShaderProgram(names, "ShaderProgram");
+    }
+
+
+    if (!ShaderLoader::IsProgram("ShaderProgramRenderCopy")) {
+        const std::string vertexRenderCopyStr = R"glsl(
+        #version 330 core
+        layout (location = 2) in vec3 aPos;
+        layout (location = 3) in vec2 aTexCord;
 
         out vec3 ourColor;
+        out vec2 texCord;
 
-        void main() {
-            gl_Position = vec4(aPos, 1.0);
-            ourColor = aColor;
+        void main(){
+	        gl_Position = vec4(aPos ,1.0);
+
+	        texCord = aTexCord;
         }
-    )glsl";
+        )glsl";
 
-    const std::string fragmentShaderStr = R"glsl(
-    #version 330 core
+            const std::string fragmentRenderCopyStr = R"glsl(
+        #version 330 core
 
-    out vec4 FragColor;
+        out vec4 FragColor;
 
-    in vec3 ourColor;
+        in vec2 texCord;
 
-    void main(){
-	    //FragColor = vec4(1.0f, 0.2f, 0.6f, 1.0f);
-	    FragColor = vec4(ourColor,1.0);
+        uniform sampler2D texture1;
+
+        uniform float alpha;
+
+        void main(){
+	        vec4 texcolor = texture(texture1,texCord);
+	        texcolor.a *= alpha;
+	        FragColor = texcolor;
+        }
+        )glsl";
+
+
+
+        ShaderLoader::LoadShaderStr("VertexShaderRenderCopy", vertexRenderCopyStr, GL_VERTEX_SHADER);
+        ShaderLoader::LoadShaderStr("FragmentShaderRenderCopy", fragmentRenderCopyStr, GL_FRAGMENT_SHADER);
+
+
+
+        std::vector<std::string> names2 = { "VertexShaderRenderCopy" ,"FragmentShaderRenderCopy" };
+        ShaderLoader::CreateShaderProgram(names2, "ShaderProgramRenderCopy");
     }
-    )glsl";
-
-    ShaderLoader::LoadShaderStr("VertexShader", vertexShaderStr, GL_VERTEX_SHADER);
-    ShaderLoader::LoadShaderStr("FragmentShader", fragmentShaderStr, GL_FRAGMENT_SHADER);
-
-    ShaderLoader::LoadShader("VertexShaderEX", "shaders/vertex_core_ex.glsl", GL_VERTEX_SHADER);
-    ShaderLoader::LoadShader("FragmentShaderEX", "shaders/fragment_core_ex.glsl", GL_FRAGMENT_SHADER);
-
-    ShaderLoader::LoadShader("VertexShaderRenderCopy", "shaders/vertex_core_render_copy.glsl", GL_VERTEX_SHADER);
-    ShaderLoader::LoadShader("FragmentShaderRenderCopy", "shaders/fragment_core_render_copy.glsl", GL_FRAGMENT_SHADER);
-
-    ShaderLoader::LoadShader("VertexShaderRenderCopyEX", "shaders/vertex_render_copy_ex.glsl", GL_VERTEX_SHADER);
-    ShaderLoader::LoadShader("FragmentShaderRenderCopyEX", "shaders/fragment_render_copy_ex.glsl", GL_FRAGMENT_SHADER);
-
-
-
-    std::vector<std::string> names = { "VertexShader" ,"FragmentShader" };
-    ShaderLoader::CreateShaderProgram(names, "ShaderProgram");
-
-    names = { "VertexShaderEX" ,"FragmentShaderEX" };
-    ShaderLoader::CreateShaderProgram(names, "ShaderProgramEX");
-
-    names = { "VertexShaderRenderCopy" ,"FragmentShaderRenderCopy" };
-    ShaderLoader::CreateShaderProgram(names, "ShaderProgramRenderCopy");
-
-    names = { "VertexShaderRenderCopyEX" ,"FragmentShaderRenderCopyEX" };
-    ShaderLoader::CreateShaderProgram(names, "ShaderProgramRenderCopyEX");
 
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    Renderer::renderCopyId = ShaderLoader::GetProgram("ShaderProgramRenderCopy");
-    Renderer::renderRectId = ShaderLoader::GetProgram("ShaderProgram");
-    Renderer::renderRectExId = ShaderLoader::GetProgram("ShaderProgramEX");
-    Renderer::renderCopyExId = ShaderLoader::GetProgram("ShaderProgramRenderCopyEX");
-    Renderer::renderRectMatrixLoc = glGetUniformLocation(ShaderLoader::GetProgram("ShaderProgramEX"), "transform");
-    
+    renderCopyId = ShaderLoader::GetProgram("ShaderProgramRenderCopy");
+    renderRectId = ShaderLoader::GetProgram("ShaderProgram");
+
     Renderer::textureLocation = glGetUniformLocation(Renderer::renderCopyId, "texture1");
-    Renderer::RenderCopyExTransform = glGetUniformLocation(Renderer::renderCopyExId, "transform");
 
     Renderer::alphaLoc = glGetUniformLocation(Renderer::renderCopyId, "alpha");
     //globalVertices.reserve(1'000'000);
@@ -714,4 +751,5 @@ void MT::Renderer::Clear() {
     // czyszczenie aby nie było wycieków pamięci nie tworzyć jak vbo i vao są globalnie zadeklarowane
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
+    SDL_GL_DeleteContext(context);
 }

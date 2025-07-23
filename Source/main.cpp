@@ -24,41 +24,18 @@ glm::vec3 GenerateRandomColor() {
 
 int main(int argc, char* argv[]) {
 
-    int success;
-    char infoLog[512];
-
-    SDL_Init(SDL_INIT_VIDEO);
-    // Set OpenGL version and profile
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 
     SDL_Window* window = SDL_CreateWindow("OpenGL Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        800, 600, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+        800, 600, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN); 
 
-
-    SDL_GLContext glContext = SDL_GL_CreateContext(window);
-
-
-    if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
-        std::cerr << "Failed to initialize GLAD\n";
-        SDL_GL_DeleteContext(glContext);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return -1;
-    }
-
-    std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << "\n";
-
-    
+    MT::Renderer ren;
+    ren.Start(window, MT::Innit(window));
 
     MT::Texture metTex1 = MT::LoadTexture("Textures/testPNG.png");
     MT::Texture metTex2 = MT::LoadTexture("Textures/tree.png");
 
 
-    //
-    MT::Renderer ren;
-    ren.Start(800, 600);
 
     glm::vec3 color{ 1.0f,0.0f,0.0f };
     bool running = true;
@@ -79,7 +56,7 @@ int main(int argc, char* argv[]) {
     metTex1.SetAlphaBending(180);
 
     float counter = 0;
-    while (counter < 200 && running) {
+    while (counter < 100 && running) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
@@ -93,13 +70,13 @@ int main(int argc, char* argv[]) {
         for (size_t i = 0; i < 1000; i++) {
             //Renderer::RenderCopyPartEX(rect, sourceRect, metTex1,counter);
             //Renderer::RenderCopyPartFEX(rectF, sourceRectF,metTex1, counter);
-            ren.RenderRect(rect, col1);
-            ren.RenderRectEX(rect2, col2, counter);
+            ren.RenderRect(rect3, col1);
+            ren.RenderRectEX(rect3, col2, counter);
 
             //Renderer::RenderRect(rect, col1);
             //Renderer::RenderRectF(rectF, col2);
-            //Renderer::RenderCopy(rect2, metTex2);
-            //Renderer::RenderCopy(rect, metTex1);
+            ren.RenderCopy(rect2, metTex2);
+            ren.RenderCopy(rect, metTex1);
             
         }
         ren.RenderPresent();
@@ -115,10 +92,9 @@ int main(int argc, char* argv[]) {
         counter++;
         SDL_GL_SwapWindow(window);
     }
-    ren.ClearFrame(255, 40, 40);
-    SDL_Delay(100000);
 
-    SDL_GL_DeleteContext(glContext);
+    SDL_Delay(100);
+    ren.Clear();
     SDL_DestroyWindow(window);
     SDL_Quit();
 

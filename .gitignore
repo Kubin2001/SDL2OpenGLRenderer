@@ -1,0 +1,7 @@
+Debug/
+lib/
+x64/
+*.dll
+OpenGLTesty.vcxproj
+OpenGLTesty.vcxproj.filters
+OpenGLTesty.vcxproj.user

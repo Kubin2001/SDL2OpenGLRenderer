@@ -24,5 +24,7 @@ class ShaderLoader {
 
 		static unsigned int& GetProgram(const std::string& name);
 
+		static bool IsProgram(const std::string& name);
+
 
 };

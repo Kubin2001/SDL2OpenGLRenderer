@@ -2,8 +2,12 @@
 
 #include "glm.hpp"
 #include "ShaderLoader.h"
+#include <SDL.h>
 
 namespace MT {
+
+	SDL_GLContext Innit(SDL_Window* window);
+
 	struct RectF {
 		float x;
 		float y;
@@ -52,6 +56,7 @@ namespace MT {
 	class Renderer {
 
 		private:
+			 SDL_GLContext context;
 			 unsigned int currentProgram;
 			 unsigned int textureLocation; //uniform
 			 unsigned int renderCopyId;
@@ -69,10 +74,10 @@ namespace MT {
 
 		public:
 			 unsigned int VAO, VBO;
-			 unsigned int W, H;
+			 int W, H;
 
 
-			 bool Start(unsigned int W, unsigned int H);
+			 bool Start(SDL_Window* window, SDL_GLContext context);
 
 			 void ClearFrame(const unsigned char R, const unsigned char G, const unsigned char B);
 

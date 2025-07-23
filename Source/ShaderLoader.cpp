@@ -81,8 +81,8 @@ unsigned int& ShaderLoader::GetShader(const std::string& name) {
     if (shaders.find(name) != shaders.end()) {
         return shaders[name];
     }
-    else{
-        std::cout << "Shader not found\n";
+    else {
+        throw std::runtime_error("Shader: " + name + " not found");
     }
 }
 
@@ -130,6 +130,13 @@ unsigned int& ShaderLoader::GetProgram(const std::string& name) {
         return shaderPrograms[name];
     }
     else {
-        std::cout << "Shader not found\n";
+        throw std::runtime_error("Shader Program: " +  name + " not found");
     }
+}
+
+bool ShaderLoader::IsProgram(const std::string& name) {
+    if (shaderPrograms.find(name) == shaderPrograms.end()) {
+        return false;
+    }
+    return true;
 }
