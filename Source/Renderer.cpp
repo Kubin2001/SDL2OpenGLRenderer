@@ -118,11 +118,18 @@ bool MT::Renderer::Start(SDL_Window* window, SDL_GLContext context) {
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0); // powierzchnie
     glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))); // tekstury
 
+    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); // powierzchnie
+    glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); // kolory
+    glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); // uv dla koła
+
 
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
     glEnableVertexAttribArray(3);
+    glEnableVertexAttribArray(4);
+    glEnableVertexAttribArray(5);
+    glEnableVertexAttribArray(6);
 
     if (!ShaderLoader::IsProgram("ShaderProgram")) {
         const std::string vertexShaderStr = R"glsl(
@@ -204,15 +211,115 @@ bool MT::Renderer::Start(SDL_Window* window, SDL_GLContext context) {
         ShaderLoader::CreateShaderProgram(names2, "ShaderProgramRenderCopy");
     }
 
+    if (!ShaderLoader::IsProgram("ShaderProgramRenderCopyCircle")) {
+        const std::string vertexRenderCopyCircleStr = R"glsl(
+        #version 330 core
+        layout (location = 2) in vec3 aPos;
+        layout (location = 3) in vec2 aTexCord;
+
+        out vec2 texCord;
+
+        void main(){
+	        gl_Position = vec4(aPos ,1.0);
+
+	        texCord = aTexCord;
+        }
+        )glsl";
+
+        const std::string fragementRenderCopyCircleStr = R"glsl(
+        #version 330 core
+        in vec2 texCord;
+        out vec4 FragColor;
+
+        uniform sampler2D texture0;
+        uniform float alpha;
+        uniform float radius;
+
+        void main()
+        {
+            vec2 center = vec2(0.5, 0.5);
+
+            float dist = distance(texCord, center);
+            if (dist > radius)
+                discard;
+
+            vec4 texColor = texture(texture0, texCord);
+            FragColor = vec4(texColor.rgb, texColor.a * alpha);
+        }
+        )glsl";
+
+
+
+        ShaderLoader::LoadShaderStr("VertexShaderRenderCopyCircle", vertexRenderCopyCircleStr, GL_VERTEX_SHADER);
+        ShaderLoader::LoadShaderStr("FragmentShaderRenderCopyCircle", fragementRenderCopyCircleStr, GL_FRAGMENT_SHADER);
+
+
+        std::vector<std::string> names2 = { "VertexShaderRenderCopyCircle" ,"FragmentShaderRenderCopyCircle" };
+        ShaderLoader::CreateShaderProgram(names2, "ShaderProgramRenderCopyCircle");
+    }
+
+    if (!ShaderLoader::IsProgram("ShaderProgramRenderCircle")) {
+        const std::string vertexRenderCircleStr = R"glsl(
+        #version 330 core
+        layout(location = 4) in vec3 aPos;
+        layout(location = 5) in vec3 aColor;
+        layout(location = 6) in vec2 aUv;
+
+        out vec3 ourColor;
+        out vec2 uv;
+
+        void main() {
+            gl_Position = vec4(aPos, 1.0);
+            ourColor = aColor;
+            uv = aUv;
+        }
+        )glsl";
+
+        const std::string fragementRenderCircleStr = R"glsl(
+        #version 330 core
+
+        in vec3 ourColor;
+        in vec2 uv;
+        out vec4 FragColor;
+
+        uniform float radius;
+
+        void main(){
+            vec2 center = vec2(0.5, 0.5);
+            float dist = distance(uv, center);
+            if (dist > radius)
+                discard;
+
+            FragColor = vec4(ourColor, 1.0);
+        }
+        )glsl";
+
+
+
+        ShaderLoader::LoadShaderStr("VertexShaderRenderCircle", vertexRenderCircleStr, GL_VERTEX_SHADER);
+        ShaderLoader::LoadShaderStr("FragmentShaderRenderCircle", fragementRenderCircleStr, GL_FRAGMENT_SHADER);
+
+
+        std::vector<std::string> names = { "VertexShaderRenderCircle" ,"FragmentShaderRenderCircle" };
+        ShaderLoader::CreateShaderProgram(names, "ShaderProgramRenderCircle");
+    }
+
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     renderCopyId = ShaderLoader::GetProgram("ShaderProgramRenderCopy");
     renderRectId = ShaderLoader::GetProgram("ShaderProgram");
+    renderCopyCircleId = ShaderLoader::GetProgram("ShaderProgramRenderCopyCircle");
+    renderCircleId = ShaderLoader::GetProgram("ShaderProgramRenderCircle");
 
-    Renderer::textureLocation = glGetUniformLocation(Renderer::renderCopyId, "texture1");
+    textureLocation = glGetUniformLocation(Renderer::renderCopyId, "texture1");
 
-    Renderer::alphaLoc = glGetUniformLocation(Renderer::renderCopyId, "alpha");
+    alphaLoc = glGetUniformLocation(Renderer::renderCopyId, "alpha");
+    radiusLoc = glGetUniformLocation(renderCopyCircleId, "radius");
+    radiusLoc2 = glGetUniformLocation(renderCircleId, "radius");
+    currentRadius = 0.5f;
+    glUniform1f(radiusLoc, currentRadius);
+    glUniform1f(radiusLoc2, currentRadius);
     //globalVertices.reserve(1'000'000);
     return true;
 }
@@ -727,6 +834,88 @@ void MT::Renderer::RenderCopyPartEX(const Rect& rect, const Rect& source, const 
         p5.x, p5.y, 0.0f, u1, v0
     };
     globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
+}
+
+
+void MT::Renderer::RenderCopyCircle(const Rect& rect, const Texture& texture, const float radius) {
+    const float x = (rect.x / static_cast<float>(W)) * 2.0f - 1.0f;
+    const float y = 1.0f - (rect.y / static_cast<float>(H)) * 2.0f;
+    const float w = (rect.w / static_cast<float>(W)) * 2.0f;
+    const float h = (rect.h / static_cast<float>(H)) * 2.0f;
+
+    // aktywacja tekstury
+
+
+    if (currentTexture != texture.texture) {
+        RenderPresent();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture.texture);
+        currentTexture = texture.texture;
+    }
+
+    if (currentProgram != renderCopyCircleId) {
+        RenderPresent();
+        currentProgram = renderCopyCircleId;
+        glUseProgram(renderCopyCircleId);
+        glUniform1f(radiusLoc, currentRadius);
+    }
+
+    if (currentRadius != radius) {
+        currentRadius = radius;
+        RenderPresent();
+        glUniform1f(radiusLoc, currentRadius);
+    }
+
+    glUniform1f(alphaLoc, texture.alpha);
+
+
+    //    // pos.x, pos.y, pos.z, tex.u, tex.v
+    float verticles[30] = {
+        x,     y - h, 0.0f, 0.0f, 0.0f,
+        x,     y,     0.0f, 0.0f, 1.0f,
+        x + w, y - h, 0.0f, 1.0f, 0.0f,
+        x,     y,     0.0f, 0.0f, 1.0f,
+        x + w, y,     0.0f, 1.0f, 1.0f,
+        x + w, y - h, 0.0f, 1.0f, 0.0f
+    };
+    globalVertices.insert(globalVertices.end(), std::begin(verticles), std::end(verticles));
+}
+
+void MT::Renderer::RenderCircle(const Rect& rect, const Color& col, const float radius) {
+    if (currentProgram != renderCircleId) {
+        RenderPresent();
+        currentProgram = renderCircleId;
+        glUseProgram(renderCircleId);
+        glUniform1f(radiusLoc2, currentRadius);
+    }
+
+    if (currentRadius != radius) {
+        currentRadius = radius;
+        RenderPresent();
+        glUniform1f(radiusLoc2, currentRadius);
+    }
+
+    float x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
+    float y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
+    float w = (static_cast<float>(rect.w) / W) * 2.0f;
+    float h = (static_cast<float>(rect.h) / H) * 2.0f;
+
+    const float fR = float(col.R) / 255;
+    const float fG = float(col.G) / 255;
+    const float fB = float(col.B) / 255;
+
+
+    // pos.x, pos.y, pos.z,  col.r, col.g, col.b u,v
+    float vertices[] = {
+        x,     y - h, 0.0f,   fR, fG, fB,   0.0f, 0.0f,
+        x,     y,     0.0f,   fR, fG, fB,   0.0f, 1.0f,
+        x + w, y - h, 0.0f,   fR, fG, fB,   1.0f, 0.0f,
+        x,     y,     0.0f,   fR, fG, fB,   0.0f, 1.0f,
+        x + w, y,     0.0f,   fR, fG, fB,   1.0f, 1.0f,
+        x + w, y - h, 0.0f,   fR, fG, fB,   1.0f, 0.0f
+    };
+
+    globalVertices.insert(globalVertices.end(), std::begin(vertices), std::end(vertices));
 }
 
 

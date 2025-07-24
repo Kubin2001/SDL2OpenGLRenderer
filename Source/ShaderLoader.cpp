@@ -87,7 +87,7 @@ unsigned int& ShaderLoader::GetShader(const std::string& name) {
 }
 
 
-void ShaderLoader::CreateShaderProgram(std::vector<std::string> &names, const std::string& programName) {
+void ShaderLoader::CreateShaderProgram(std::vector<std::string> &names, const std::string& programName, bool deleteShader) {
     for (auto& it : names) {
         if (shaders.find(it) == shaders.end()) {
             std::cout << "Shader " << it << "not found program creation stopped\n";
@@ -119,10 +119,13 @@ void ShaderLoader::CreateShaderProgram(std::vector<std::string> &names, const st
     }
 
     //Usuwanie shaderów bo z racji po³¹czenia w program s¹ niepotrzebne
-    for (auto& it : names) {
-        glDeleteShader(ShaderLoader::GetShader(it));
-        shaders.erase(it);
+    if (deleteShader) {
+        for (auto& it : names) {
+            glDeleteShader(ShaderLoader::GetShader(it));
+            shaders.erase(it);
+        }
     }
+
 }
 
 unsigned int& ShaderLoader::GetProgram(const std::string& name) {

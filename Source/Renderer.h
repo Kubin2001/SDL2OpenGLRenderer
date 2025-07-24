@@ -61,12 +61,16 @@ namespace MT {
 			 unsigned int textureLocation; //uniform
 			 unsigned int renderCopyId;
 			 unsigned int renderRectId;
-			 unsigned int renderRectExId;
-			 unsigned int renderCopyExId;
+			 unsigned int renderCopyCircleId;
+			 unsigned int renderCircleId;
+
 			 unsigned int RenderCopyExTransform;
 			 unsigned int currentTexture;
 			 unsigned int renderRectMatrixLoc;
 			 unsigned int alphaLoc;
+			 unsigned int radiusLoc;
+			 unsigned int radiusLoc2;
+			 float currentRadius;
 
 			 std::vector<float> globalVertices;
 
@@ -98,6 +102,10 @@ namespace MT {
 
 			 void RenderCopyPartFEX(const RectF& rect, const RectF& source, const Texture& texture, const float rotation);
 			 void RenderCopyPartEX(const Rect& rect, const Rect& source, const Texture& texture, const float rotation);
+
+			 void RenderCopyCircle(const Rect& rect, const Texture& texture, const float radius = 0.5f);
+
+			 void RenderCircle(const Rect& rect, const Color& col, const float radius = 0.5f);
 
 			 void RenderPresent();
 

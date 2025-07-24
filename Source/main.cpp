@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
     bool running = true;
     SDL_Event event;
 
-    MT::Rect rect{ 400,400,20,20 };
+    MT::Rect rect{ 400,400,100,100 };
     MT::Rect rect2{ 200,400,100,100 };
     MT::Rect rect3{ 0,400,200,200 };
     MT::RectF rectF{ 0.0f,0.0f,0.5f,0.5f };
@@ -68,17 +68,18 @@ int main(int argc, char* argv[]) {
         auto start = std::chrono::high_resolution_clock::now();
 
         for (size_t i = 0; i < 1000; i++) {
-            //Renderer::RenderCopyPartEX(rect, sourceRect, metTex1,counter);
-            //Renderer::RenderCopyPartFEX(rectF, sourceRectF,metTex1, counter);
+
             ren.RenderRect(rect3, col1);
             ren.RenderRectEX(rect3, col2, counter);
 
-            //Renderer::RenderRect(rect, col1);
-            //Renderer::RenderRectF(rectF, col2);
             ren.RenderCopy(rect2, metTex2);
             ren.RenderCopy(rect, metTex1);
+
+            ren.RenderCircle(rect, col1, 0.55f);
+            ren.RenderCopyCircle(rect2, metTex1,0.55f);
             
         }
+        rect2.w++;
         ren.RenderPresent();
 
 

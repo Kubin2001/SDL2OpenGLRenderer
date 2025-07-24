@@ -20,7 +20,7 @@ class ShaderLoader {
 
 		static unsigned int& GetShader(const std::string& name);
 
-		static void CreateShaderProgram(std::vector<std::string> &names, const std::string& programName);
+		static void CreateShaderProgram(std::vector<std::string>& names, const std::string& programName, bool deleteShader = false);
 
 		static unsigned int& GetProgram(const std::string& name);
 
