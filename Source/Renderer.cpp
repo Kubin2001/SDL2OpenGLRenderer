@@ -609,10 +609,12 @@ void MT::Renderer::RenderCopyPartF(const RectF& rect, const RectF& source, const
     }
     glUniform1f(alphaLoc, texture.alpha);
 
+
     const float u0 = source.x;
-    const float v0 = source.y;
     const float u1 = source.x + source.w;
-    const float v1 = source.y + source.h;
+    const float v1 = 1.0f - source.y;
+    const float v0 = v1 - source.h;
+
 
     float verticles[30] = {
         rect.x,          rect.y - rect.h, 0.0f, u0, v0,
@@ -655,9 +657,10 @@ void MT::Renderer::RenderCopyPart(const Rect& rect, const Rect& source, const Te
     tempSource.h = static_cast<float>(source.h) / texture.h;
 
     float u0 = tempSource.x;
-    float v0 = tempSource.y;
     float u1 = tempSource.x + tempSource.w;
-    float v1 = tempSource.y + tempSource.h;
+    float v1 = 1.0f - tempSource.y;
+    float v0 = v1 - tempSource.h;
+
 
     // pos.x pos.y pos.z, tex.u, tex.v
     float verticles[30] = {
@@ -669,6 +672,7 @@ void MT::Renderer::RenderCopyPart(const Rect& rect, const Rect& source, const Te
         x + w, y - h, 0.0f, u1, v0
     };
     globalVertices.insert(globalVertices.end(), std::begin(verticles), std::end(verticles));
+    //printf("u0=%.3f, v0=%.3f, u1=%.3f, v1=%.3f\n", u0, v0, u1, v1);
 }
 
 void MT::Renderer::RenderCopyFEX(const RectF& rect, const Texture& texture, const float rotation) {
@@ -712,8 +716,6 @@ void MT::Renderer::RenderCopyFEX(const RectF& rect, const Texture& texture, cons
     };
     globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
 }
-
-
 
 void MT::Renderer::RenderCopyEX(const Rect& rect, const Texture& texture, const float rotation) {
     if (Renderer::currentTexture != texture.texture) {
@@ -784,9 +786,9 @@ void MT::Renderer::RenderCopyPartFEX(const RectF& rect, const RectF& source, con
     float halfH = rect.h / 2.0f;
 
     const float u0 = source.x;
-    const float v0 = source.y;
     const float u1 = source.x + source.w;
-    const float v1 = source.y + source.h;
+    const float v1 = 1.0f - source.y;
+    const float v0 = v1 - source.h;
 
     float rad = glm::radians(rotation);
     float cosA = cosf(rad);
@@ -839,10 +841,13 @@ void MT::Renderer::RenderCopyPartEX(const Rect& rect, const Rect& source, const 
     const float texW = static_cast<float>(texture.w);
     const float texH = static_cast<float>(texture.h);
 
+
     const float u0 = static_cast<float>(source.x) / texW;
-    const float v0 = static_cast<float>(source.y) / texH;
     const float u1 = static_cast<float>(source.x + source.w) / texW;
-    const float v1 = static_cast<float>(source.y + source.h) / texH;
+
+    const float v1 = 1.0f - static_cast<float>(source.y) / texH;
+    const float v0 = v1 - static_cast<float>(source.h) / texH;
+
 
     float rad = glm::radians(rotation);
     float cosA = cosf(rad);

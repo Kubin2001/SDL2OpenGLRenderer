@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
     MT::Renderer ren;
     ren.Start(window, MT::Innit(window));
 
-    MT::Texture* metTex1 = MT::LoadTexture("Textures/testPNG.png");
+    MT::Texture* metTex1 = MT::LoadTexture("Textures/testPNG2.png");
     MT::Texture* metTex2 = MT::LoadTexture("Textures/tree.png");
 
 
@@ -41,13 +41,16 @@ int main(int argc, char* argv[]) {
     bool running = true;
     SDL_Event event;
 
-    MT::Rect rect{ 400,400,100,100 };
+    MT::Rect rect{ 0,0,512,512 };
+    MT::Rect sourceRect{125,125,125,125 };
     MT::Rect rect2{ 200,400,100,100 };
     MT::Rect rect3{ 0,400,200,200 };
-    MT::RectF rectF{ 0.0f,0.0f,0.5f,0.5f };
+
     MT::RectF rectF2{ -0.5f,-0.5f,0.5f,0.5f };
-    MT::Rect sourceRect{ 0,0,320,320 };
-    MT::RectF sourceRectF{ -0.5f,-0.5f,0.5f,0.5f };
+
+    MT::RectF rectF{ -1.0f,1.0f,1.0f,1.0f };
+    MT::RectF sourceRectF{ 0.122f,0.122f,0.122f,0.122f };
+
     MT::Rect rightUP{ 400,0,400,300 };
 
     MT::Color col1(255, 255, 255);
@@ -56,7 +59,7 @@ int main(int argc, char* argv[]) {
     metTex1->SetAlphaBending(180);
 
     float counter = 0;
-    while (counter < 100 && running) {
+    while (counter < 100000 && running) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
@@ -65,28 +68,24 @@ int main(int argc, char* argv[]) {
         color = GenerateRandomColor();
         ren.ClearFrame(40,40,40);
 
-        auto start = std::chrono::high_resolution_clock::now();
 
-        for (size_t i = 0; i < 1000; i++) {
+        //ren.RenderCopyPart(rect,sourceRect,*metTex1);
+        //ren.RenderCopyPartF(rectF, sourceRectF, *metTex1);
 
-            ren.RenderRect(rect3, col1);
-            ren.RenderRectEX(rect3, col2, counter);
+        ren.RenderCopyPartEX(rect, sourceRect, *metTex1,counter);
+        //ren.RenderCopyPartFEX(rectF, sourceRectF, *metTex1,0);
+        //ren.RenderRect(rect3, col1);
+        //ren.RenderRectEX(rect3, col2, counter);
 
-            ren.RenderCopy(rect2, *metTex2);
-            ren.RenderCopy(rect, *metTex1);
+        //ren.RenderCopy(rect2, *metTex2);
+        //ren.RenderCopy(rect, *metTex1);
 
-            ren.RenderCircle(rect, col1, 0.55f);
-            ren.RenderCopyCircle(rect2, *metTex1,0.55f);
+        //ren.RenderCircle(rect, col1, 0.55f);
+        //ren.RenderCopyCircle(rect2, *metTex1,0.55f);
             
-        }
         rect2.w++;
         ren.RenderPresent();
 
-
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-
-        std::cout << "Took: " << duration << " microseconds\n";
 
         
         
