@@ -32,8 +32,8 @@ int main(int argc, char* argv[]) {
     MT::Renderer ren;
     ren.Start(window, MT::Innit(window));
 
-    MT::Texture metTex1 = MT::LoadTexture("Textures/testPNG.png");
-    MT::Texture metTex2 = MT::LoadTexture("Textures/tree.png");
+    MT::Texture* metTex1 = MT::LoadTexture("Textures/testPNG.png");
+    MT::Texture* metTex2 = MT::LoadTexture("Textures/tree.png");
 
 
 
@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
     MT::Color col1(255, 255, 255);
     MT::Color col2(0, 255, 0);
 
-    metTex1.SetAlphaBending(180);
+    metTex1->SetAlphaBending(180);
 
     float counter = 0;
     while (counter < 100 && running) {
@@ -72,11 +72,11 @@ int main(int argc, char* argv[]) {
             ren.RenderRect(rect3, col1);
             ren.RenderRectEX(rect3, col2, counter);
 
-            ren.RenderCopy(rect2, metTex2);
-            ren.RenderCopy(rect, metTex1);
+            ren.RenderCopy(rect2, *metTex2);
+            ren.RenderCopy(rect, *metTex1);
 
             ren.RenderCircle(rect, col1, 0.55f);
-            ren.RenderCopyCircle(rect2, metTex1,0.55f);
+            ren.RenderCopyCircle(rect2, *metTex1,0.55f);
             
         }
         rect2.w++;

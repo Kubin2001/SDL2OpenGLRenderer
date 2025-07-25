@@ -49,9 +49,10 @@ namespace MT {
 	};
 
 
-	Texture LoadTexture(const char* path);
-	
+	Texture* LoadTexture(const char* path);
 
+	Texture* LoadTextureFromSurface(SDL_Surface *surf);
+	
 
 	class Renderer {
 

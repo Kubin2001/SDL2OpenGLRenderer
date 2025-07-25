@@ -41,7 +41,7 @@ SDL_GLContext MT::Innit(SDL_Window *window) {
     return context;
 }
 
-MT::Texture MT::LoadTexture(const char* path) {
+MT::Texture* MT::LoadTexture(const char* path) {
     unsigned int texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
@@ -56,10 +56,11 @@ MT::Texture MT::LoadTexture(const char* path) {
 
     SDL_Surface* surf = IMG_Load(path);
 
-    MT::Texture metTex;
-    metTex.texture = texture;
+    MT::Texture *metTex = new MT::Texture;
+    metTex->texture = texture;
     if (!surf) {
-        std::cout << "Failed to load image: " << IMG_GetError() << std::endl;
+        std::cout << "Failed to load image MT::LoadTexture: " << IMG_GetError() << "\n";
+        return metTex;
     }
     else {
         SDL_Surface* formatted = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_RGBA32, 0); // Aby się nie crashowało jak jest zły format
@@ -67,12 +68,43 @@ MT::Texture MT::LoadTexture(const char* path) {
         surf = formatted;
         surf = FlipSurfaceVertical(surf);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surf->w, surf->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surf->pixels); // RGBA dla png
-        metTex.w = surf->w;
-        metTex.h = surf->h;
+        metTex->w = surf->w;
+        metTex->h = surf->h;
         glGenerateMipmap(GL_TEXTURE_2D);
     }
     SDL_FreeSurface(surf);
-    std::cout << "Textura załadowana: " << metTex.texture << " " << metTex.w << " " << metTex.h << "\n";
+
+    return metTex;
+}
+
+MT::Texture* MT::LoadTextureFromSurface(SDL_Surface* surf) {
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); //rozmywa piksele
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //świetne dla pixel art
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    MT::Texture* metTex = new MT::Texture;
+    metTex->texture = texture;
+    if (!surf) {
+        std::cout << "Empty surface in MT::LoadTextureFromSurface: " << IMG_GetError() << std::endl;
+        return metTex;
+    }
+
+    SDL_Surface* formatted = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_RGBA32, 0); // Aby się nie crashowało jak jest zły format
+    SDL_Surface* flipped = FlipSurfaceVertical(formatted);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, flipped->w, flipped->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, flipped->pixels); // RGBA dla png
+    metTex->w = flipped->w;
+    metTex->h = flipped->h;
+    glGenerateMipmap(GL_TEXTURE_2D);
+    SDL_FreeSurface(flipped);
+    SDL_FreeSurface(formatted);
 
     return metTex;
 }
