@@ -197,6 +197,41 @@ bool MT::Renderer::Start(SDL_Window* window, SDL_GLContext context) {
         ShaderLoader::CreateShaderProgram(names, "ShaderProgram");
     }
 
+    if (!ShaderLoader::IsProgram("ShaderProgramRecAlpha")) {
+        const std::string vertexShaderStr = R"glsl(
+        #version 330 core
+        layout(location = 0) in vec3 aPos;
+        layout(location = 1) in vec3 aColor;
+
+            out vec3 ourColor;
+
+            void main() {
+                gl_Position = vec4(aPos, 1.0);
+                ourColor = aColor;
+            }
+        )glsl";
+
+        const std::string fragmentShaderStr = R"glsl(
+        #version 330 core
+
+        out vec4 FragColor;
+
+        in vec3 ourColor;
+
+        uniform float alpha;
+
+        void main(){
+	        FragColor = vec4(ourColor,1.0 *alpha);
+        }
+        )glsl";
+
+
+        ShaderLoader::LoadShaderStr("VertexShaderAlpha", vertexShaderStr, GL_VERTEX_SHADER);
+        ShaderLoader::LoadShaderStr("FragmentShaderAlpha", fragmentShaderStr, GL_FRAGMENT_SHADER);
+
+        std::vector<std::string> names = { "VertexShaderAlpha" ,"FragmentShaderAlpha" };
+        ShaderLoader::CreateShaderProgram(names, "ShaderProgramAlpha");
+    }
 
     if (!ShaderLoader::IsProgram("ShaderProgramRenderCopy")) {
         const std::string vertexRenderCopyStr = R"glsl(
@@ -343,10 +378,14 @@ bool MT::Renderer::Start(SDL_Window* window, SDL_GLContext context) {
     renderRectId = ShaderLoader::GetProgram("ShaderProgram");
     renderCopyCircleId = ShaderLoader::GetProgram("ShaderProgramRenderCopyCircle");
     renderCircleId = ShaderLoader::GetProgram("ShaderProgramRenderCircle");
+    renderRectAlphaId = ShaderLoader::GetProgram("ShaderProgramAlpha");
+    
 
     textureLocation = glGetUniformLocation(Renderer::renderCopyId, "texture1");
 
-    alphaLoc = glGetUniformLocation(Renderer::renderCopyId, "alpha");
+
+    alphaLoc = glGetUniformLocation(renderCopyId, "alpha");
+    alphaLocRect = glGetUniformLocation(renderRectAlphaId, "alpha");
     radiusLoc = glGetUniformLocation(renderCopyCircleId, "radius");
     radiusLoc2 = glGetUniformLocation(renderCircleId, "radius");
     currentRadius = 0.5f;
@@ -955,6 +994,87 @@ void MT::Renderer::RenderCircle(const Rect& rect, const Color& col, const float 
     globalVertices.insert(globalVertices.end(), std::begin(vertices), std::end(vertices));
 }
 
+void MT::Renderer::RenderRectAlpha(const Rect& rect, const Color& col, unsigned char alpha) {
+    if (Renderer::currentProgram != renderRectAlphaId) {
+        RenderPresent();
+        Renderer::currentProgram = renderRectAlphaId;
+        glUseProgram(renderRectAlphaId);
+    }
+
+    float floatAlpha = float(alpha) / 255;
+    glUniform1f(alphaLoc, floatAlpha);
+
+    float x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
+    float y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
+    float w = (static_cast<float>(rect.w) / W) * 2.0f;
+    float h = (static_cast<float>(rect.h) / H) * 2.0f;
+
+    const float fR = float(col.R) / 255;
+    const float fG = float(col.G) / 255;
+    const float fB = float(col.B) / 255;
+
+
+    // pos.x, pos.y, pos.z,  col.r, col.g, col.b
+    float vertices[] = {
+        x,     y - h, 0.0f, fR, fG, fB,
+        x,     y,     0.0f, fR, fG, fB,
+        x + w, y - h, 0.0f, fR, fG, fB,
+        x,     y,     0.0f, fR, fG, fB,
+        x + w, y,     0.0f, fR, fG, fB,
+        x + w, y - h, 0.0f, fR, fG, fB,
+    };
+
+    globalVertices.insert(globalVertices.end(), std::begin(vertices), std::end(vertices));
+}
+
+void MT::Renderer::RenderRectAlphaEX(const Rect& rect, const Color& col, unsigned char alpha, const float rotation) {
+    if (Renderer::currentProgram != renderRectAlphaId) {
+        RenderPresent();
+        Renderer::currentProgram = renderRectAlphaId;
+        glUseProgram(renderRectAlphaId);
+    }
+
+    float floatAlpha = float(alpha) / 255;
+    glUniform1f(alphaLoc, floatAlpha);
+
+    RectF temp;
+    float aspect = static_cast<float>(H) / static_cast<float>(W);
+    temp.x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
+    temp.y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
+    temp.w = (static_cast<float>(rect.w) / W) * 2.0f;
+    temp.h = (static_cast<float>(rect.h) / H) * 2.0f;
+
+    float halfW = temp.w / 2.0f;
+    float halfH = temp.h / 2.0f;
+
+    const float fR = float(col.R) / 255;
+    const float fG = float(col.G) / 255;
+    const float fB = float(col.B) / 255;
+
+    float rad = glm::radians(rotation);
+    float cosA = cosf(rad);
+    float sinA = sinf(rad);
+
+    glm::vec2 center = { temp.x + halfW, temp.y - halfH };
+
+    glm::vec2 p0 = RotateAndTranslate2D(-halfW, -halfH, center, cosA, sinA);
+    glm::vec2 p1 = RotateAndTranslate2D(-halfW, halfH, center, cosA, sinA);
+    glm::vec2 p2 = RotateAndTranslate2D(halfW, halfH, center, cosA, sinA);
+    glm::vec2 p3 = RotateAndTranslate2D(-halfW, -halfH, center, cosA, sinA);
+    glm::vec2 p4 = RotateAndTranslate2D(halfW, halfH, center, cosA, sinA);
+    glm::vec2 p5 = RotateAndTranslate2D(halfW, -halfH, center, cosA, sinA);
+
+    const float vertex[] = {
+        p0.x, p0.y, 0.0f, fR, fG, fB,
+        p1.x, p1.y, 0.0f, fR, fG, fB,
+        p2.x, p2.y, 0.0f, fR, fG, fB,
+        p3.x, p3.y, 0.0f, fR, fG, fB,
+        p4.x, p4.y, 0.0f, fR, fG, fB,
+        p5.x, p5.y, 0.0f, fR, fG, fB,
+    };
+    globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
+}
+
 
 void MT::Renderer::RenderPresent() {
     if (globalVertices.empty()) {
@@ -968,6 +1088,8 @@ void MT::Renderer::RenderPresent() {
 
     globalVertices.clear();
 }
+
+
 
 void MT::Renderer::Clear() {
     // Odwiązanie VAO - bezpieczne praktyka, aby nie modyfikować przypadkowo tego VAO w przyszłości

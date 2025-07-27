@@ -41,20 +41,9 @@ int main(int argc, char* argv[]) {
     bool running = true;
     SDL_Event event;
 
-    MT::Rect rect{ 0,0,512,512 };
-    MT::Rect sourceRect{125,125,125,125 };
-    MT::Rect rect2{ 200,400,100,100 };
-    MT::Rect rect3{ 0,400,200,200 };
+    MT::Rect rect{ 100,100,100,100 };
+    MT::Rect rect2{ 400,100,100,100 };
 
-    MT::RectF rectF2{ -0.5f,-0.5f,0.5f,0.5f };
-
-    MT::RectF rectF{ -1.0f,1.0f,1.0f,1.0f };
-    MT::RectF sourceRectF{ 0.122f,0.122f,0.122f,0.122f };
-
-    MT::Rect rightUP{ 400,0,400,300 };
-
-    MT::Color col1(255, 255, 255);
-    MT::Color col2(0, 255, 0);
 
     metTex1->SetAlphaBending(180);
 
@@ -69,26 +58,14 @@ int main(int argc, char* argv[]) {
         ren.ClearFrame(40,40,40);
 
 
-        //ren.RenderCopyPart(rect,sourceRect,*metTex1);
-        //ren.RenderCopyPartF(rectF, sourceRectF, *metTex1);
+        ren.RenderCopy(rect, *metTex1);
 
-        ren.RenderCopyPartEX(rect, sourceRect, *metTex1,counter);
-        //ren.RenderCopyPartFEX(rectF, sourceRectF, *metTex1,0);
-        //ren.RenderRect(rect3, col1);
-        //ren.RenderRectEX(rect3, col2, counter);
-
-        //ren.RenderCopy(rect2, *metTex2);
-        //ren.RenderCopy(rect, *metTex1);
-
-        //ren.RenderCircle(rect, col1, 0.55f);
-        //ren.RenderCopyCircle(rect2, *metTex1,0.55f);
+        ren.RenderCopy(rect2, *metTex1);
+        ren.RenderRectAlphaEX(rect2, { 255,255,255 }, 100,counter);
             
-        rect2.w++;
+        
         ren.RenderPresent();
 
-
-        
-        
         counter++;
         SDL_GL_SwapWindow(window);
     }

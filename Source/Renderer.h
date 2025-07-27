@@ -64,11 +64,13 @@ namespace MT {
 			 unsigned int renderRectId;
 			 unsigned int renderCopyCircleId;
 			 unsigned int renderCircleId;
+			 unsigned int renderRectAlphaId;
 
 			 unsigned int RenderCopyExTransform;
 			 unsigned int currentTexture;
 			 unsigned int renderRectMatrixLoc;
 			 unsigned int alphaLoc;
+			 unsigned int alphaLocRect;
 			 unsigned int radiusLoc;
 			 unsigned int radiusLoc2;
 			 float currentRadius;
@@ -107,6 +109,9 @@ namespace MT {
 			 void RenderCopyCircle(const Rect& rect, const Texture& texture, const float radius = 0.5f);
 
 			 void RenderCircle(const Rect& rect, const Color& col, const float radius = 0.5f);
+
+			 void RenderRectAlpha(const Rect& rect, const Color& col, unsigned char alpha);
+			 void RenderRectAlphaEX(const Rect& rect, const Color& col, unsigned char alpha, const float rotation);
 
 			 void RenderPresent();
 
