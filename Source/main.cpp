@@ -33,7 +33,8 @@ int main(int argc, char* argv[]) {
     ren.Start(window, MT::Innit(window));
 
     MT::Texture* metTex1 = MT::LoadTexture("Textures/testPNG2.png");
-    MT::Texture* metTex2 = MT::LoadTexture("Textures/tree.png");
+    MT::Texture* metTex2 = MT::LoadTexture("Textures/tree.png"); 
+    MT::Texture* letterTex = MT::LoadTexture("Textures/TestLetter.png");
 
 
 
@@ -43,6 +44,7 @@ int main(int argc, char* argv[]) {
 
     MT::Rect rect{ 100,100,100,100 };
     MT::Rect rect2{ 400,100,100,100 };
+    MT::Rect source{ 0,0,40,20 };
 
 
     metTex1->SetAlphaBending(180);
@@ -58,10 +60,13 @@ int main(int argc, char* argv[]) {
         ren.ClearFrame(40,40,40);
 
 
-        ren.RenderCopy(rect, *metTex1);
+        //ren.RenderCopy(rect, *metTex1);
+        //ren.RenderCopy(rect, *letterTex);
+        ren.RenderCopyFiltered(rect2, *letterTex, {255,255,255});
+        ren.RenderCopyPartFiltered(rect, source, *letterTex, { 0,255,255 });
 
-        ren.RenderCopy(rect2, *metTex1);
-        ren.RenderRectAlphaEX(rect2, { 255,255,255 }, 100,counter);
+        //ren.RenderCopy(rect2, *metTex1);
+        //ren.RenderRectAlphaEX(rect2, { 255,255,255 }, 100,counter);
             
         
         ren.RenderPresent();

@@ -154,6 +154,10 @@ bool MT::Renderer::Start(SDL_Window* window, SDL_GLContext context) {
     glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); // kolory
     glVertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float))); // uv dla koła
 
+    glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); // powierzchnie
+    glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float))); // tekstury
+    glVertexAttribPointer(9, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float))); // filtr koloru tekstury
+
 
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
@@ -162,6 +166,9 @@ bool MT::Renderer::Start(SDL_Window* window, SDL_GLContext context) {
     glEnableVertexAttribArray(4);
     glEnableVertexAttribArray(5);
     glEnableVertexAttribArray(6);
+    glEnableVertexAttribArray(7);
+    glEnableVertexAttribArray(8);
+    glEnableVertexAttribArray(9);
 
     if (!ShaderLoader::IsProgram("ShaderProgram")) {
         const std::string vertexShaderStr = R"glsl(
@@ -371,6 +378,54 @@ bool MT::Renderer::Start(SDL_Window* window, SDL_GLContext context) {
         ShaderLoader::CreateShaderProgram(names, "ShaderProgramRenderCircle");
     }
 
+    if (!ShaderLoader::IsProgram("ShaderProgramRenderCopyFilter")) {
+        const std::string vertexRenderCopyStr = R"glsl(
+        #version 330 core
+        layout (location = 7) in vec3 aPos;
+        layout (location = 8) in vec2 aTexCord;
+        layout (location = 9) in vec3 aFilter;
+
+        out vec2 texCord;
+        out vec3 filter;
+
+        void main(){
+	        gl_Position = vec4(aPos ,1.0);
+	        texCord = aTexCord;
+            filter = aFilter;
+        }
+        )glsl";
+
+        const std::string fragmentRenderCopyStr = R"glsl(
+        #version 330 core
+        out vec4 FragColor;
+
+        in vec2 texCord;
+        in vec3 filter;
+
+        uniform sampler2D texture1;
+
+        uniform float alpha;
+
+        void main(){
+	        vec4 texcolor = texture(texture1,texCord);
+            texcolor.x *= filter.x; 
+            texcolor.y *= filter.y; 
+            texcolor.z *= filter.z; 
+	        texcolor.a *= alpha;
+	        FragColor = texcolor;
+        }
+        )glsl";
+
+
+
+        ShaderLoader::LoadShaderStr("VertexShaderRenderCopyFilter", vertexRenderCopyStr, GL_VERTEX_SHADER);
+        ShaderLoader::LoadShaderStr("FragmentShaderRenderCopyFilter", fragmentRenderCopyStr, GL_FRAGMENT_SHADER);
+
+
+
+        std::vector<std::string> names2 = { "VertexShaderRenderCopyFilter" ,"FragmentShaderRenderCopyFilter" };
+        ShaderLoader::CreateShaderProgram(names2, "ShaderProgramRenderCopyFilter");
+    }
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -379,15 +434,18 @@ bool MT::Renderer::Start(SDL_Window* window, SDL_GLContext context) {
     renderCopyCircleId = ShaderLoader::GetProgram("ShaderProgramRenderCopyCircle");
     renderCircleId = ShaderLoader::GetProgram("ShaderProgramRenderCircle");
     renderRectAlphaId = ShaderLoader::GetProgram("ShaderProgramAlpha");
+    renderCopyFilterId = ShaderLoader::GetProgram("ShaderProgramRenderCopyFilter");
     
 
-    textureLocation = glGetUniformLocation(Renderer::renderCopyId, "texture1");
+    textureLocation = glGetUniformLocation(renderCopyId, "texture1");
 
 
     alphaLoc = glGetUniformLocation(renderCopyId, "alpha");
     alphaLocRect = glGetUniformLocation(renderRectAlphaId, "alpha");
     radiusLoc = glGetUniformLocation(renderCopyCircleId, "radius");
     radiusLoc2 = glGetUniformLocation(renderCircleId, "radius");
+    textureLocationFilter = glGetUniformLocation(renderCopyFilterId, "texture1");
+    alphaLocFilter = glGetUniformLocation(renderCopyFilterId, "alpha");
     currentRadius = 0.5f;
     glUniform1f(radiusLoc, currentRadius);
     glUniform1f(radiusLoc2, currentRadius);
@@ -711,7 +769,6 @@ void MT::Renderer::RenderCopyPart(const Rect& rect, const Rect& source, const Te
         x + w, y - h, 0.0f, u1, v0
     };
     globalVertices.insert(globalVertices.end(), std::begin(verticles), std::end(verticles));
-    //printf("u0=%.3f, v0=%.3f, u1=%.3f, v1=%.3f\n", u0, v0, u1, v1);
 }
 
 void MT::Renderer::RenderCopyFEX(const RectF& rect, const Texture& texture, const float rotation) {
@@ -1073,6 +1130,89 @@ void MT::Renderer::RenderRectAlphaEX(const Rect& rect, const Color& col, unsigne
         p5.x, p5.y, 0.0f, fR, fG, fB,
     };
     globalVertices.insert(globalVertices.end(), std::begin(vertex), std::end(vertex));
+}
+
+void MT::Renderer::RenderCopyFiltered(const Rect& rect, const Texture& texture, const Color& filter) {
+    const float x = (rect.x / static_cast<float>(W)) * 2.0f - 1.0f;
+    const float y = 1.0f - (rect.y / static_cast<float>(H)) * 2.0f;
+    const float w = (rect.w / static_cast<float>(W)) * 2.0f;
+    const float h = (rect.h / static_cast<float>(H)) * 2.0f;
+
+    // aktywacja tekstury
+    if (Renderer::currentTexture != texture.texture) {
+        RenderPresent();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture.texture);
+        currentTexture = texture.texture;
+    }
+
+    if (currentProgram != renderCopyFilterId) {
+        RenderPresent();
+        currentProgram = renderCopyFilterId;
+        glUseProgram(renderCopyFilterId);
+    }
+
+    glUniform1f(alphaLoc, texture.alpha);
+    const float fR = float(filter.R) / 255;
+    const float fG = float(filter.G) / 255;
+    const float fB = float(filter.B) / 255;
+
+    // pos.x, pos.y, pos.z, tex.u, tex.v col.r,col.g,col.b
+    float verticles[] = {
+        x,     y - h, 0.0f, 0.0f, 0.0f, fR, fG, fB,
+        x,     y,     0.0f, 0.0f, 1.0f, fR, fG, fB,
+        x + w, y - h, 0.0f, 1.0f, 0.0f, fR, fG, fB,
+        x,     y,     0.0f, 0.0f, 1.0f, fR, fG, fB,
+        x + w, y,     0.0f, 1.0f, 1.0f, fR, fG, fB,
+        x + w, y - h, 0.0f, 1.0f, 0.0f, fR, fG, fB
+    };
+    globalVertices.insert(globalVertices.end(), std::begin(verticles), std::end(verticles));
+}
+
+void MT::Renderer::RenderCopyPartFiltered(const Rect& rect, const Rect& source, const Texture& texture, const Color& filter) {
+    const float x = (static_cast<float>(rect.x) / W) * 2.0f - 1.0f;
+    const float y = 1.0f - (static_cast<float>(rect.y) / H) * 2.0f;
+    const float w = (static_cast<float>(rect.w) / W) * 2.0f;
+    const float h = (static_cast<float>(rect.h) / H) * 2.0f;
+
+
+    if (Renderer::currentTexture != texture.texture) {
+        RenderPresent();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture.texture);
+        currentTexture = texture.texture;
+    }
+
+    if (currentProgram != renderCopyFilterId) {
+        RenderPresent();
+        currentProgram = renderCopyFilterId;
+        glUseProgram(renderCopyFilterId);
+    }
+    glUniform1f(alphaLoc, texture.alpha);
+    const float fR = float(filter.R) / 255;
+    const float fG = float(filter.G) / 255;
+    const float fB = float(filter.B) / 255;
+
+    const float tempSourceX = static_cast<float>(source.x) / texture.w;
+    const float tempSourceY = static_cast<float>(source.y) / texture.h;
+    const float tempSourceW = static_cast<float>(source.w) / texture.w;
+    const float tempSourceH = static_cast<float>(source.h) / texture.h;
+
+    float u0 = tempSourceX;
+    float u1 = tempSourceX + tempSourceW;
+    float v1 = 1.0f - tempSourceY;
+    float v0 = v1 - tempSourceH;
+
+    // pos.x, pos.y, pos.z, tex.u, tex.v col.r,col.g,col.b
+    float verticles[] = {
+        x,     y - h, 0.0f, u0, v0, fR, fG, fB,
+        x,     y,     0.0f, u0, v1, fR, fG, fB,
+        x + w, y - h, 0.0f, u1, v0, fR, fG, fB,
+        x,     y,     0.0f, u0, v1, fR, fG, fB,
+        x + w, y,     0.0f, u1, v1, fR, fG, fB,
+        x + w, y - h, 0.0f, u1, v0, fR, fG, fB
+    };
+    globalVertices.insert(globalVertices.end(), std::begin(verticles), std::end(verticles));
 }
 
 

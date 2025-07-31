@@ -59,20 +59,24 @@ namespace MT {
 		private:
 			 SDL_GLContext context;
 			 unsigned int currentProgram;
-			 unsigned int textureLocation; //uniform
+			 
 			 unsigned int renderCopyId;
 			 unsigned int renderRectId;
 			 unsigned int renderCopyCircleId;
 			 unsigned int renderCircleId;
 			 unsigned int renderRectAlphaId;
+			 unsigned int renderCopyFilterId;
 
 			 unsigned int RenderCopyExTransform;
+			 unsigned int textureLocation;
 			 unsigned int currentTexture;
 			 unsigned int renderRectMatrixLoc;
 			 unsigned int alphaLoc;
 			 unsigned int alphaLocRect;
 			 unsigned int radiusLoc;
 			 unsigned int radiusLoc2;
+			 unsigned int alphaLocFilter;
+			 unsigned int textureLocationFilter;
 			 float currentRadius;
 
 			 std::vector<float> globalVertices;
@@ -112,6 +116,10 @@ namespace MT {
 
 			 void RenderRectAlpha(const Rect& rect, const Color& col, unsigned char alpha);
 			 void RenderRectAlphaEX(const Rect& rect, const Color& col, unsigned char alpha, const float rotation);
+
+			 void RenderCopyFiltered(const Rect& rect, const Texture& texture, const Color& filter);
+
+			 void RenderCopyPartFiltered(const Rect& rect, const Rect& source, const Texture& texture, const Color& filter);
 
 			 void RenderPresent();
 
