@@ -25,3 +25,5 @@ Simple 2D renderer test to learn SDL2-OpenGL integration
 
 1.05
 - Entire architecture has been changed
+- Circle Rendering 
+- Texture Filtering
