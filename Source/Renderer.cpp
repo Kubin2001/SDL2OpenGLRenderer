@@ -117,7 +117,7 @@ glm::vec2 RotateAndTranslate2D(float localX, float localY, const glm::vec2& cent
 }
 
 bool MT::Renderer::Start(SDL_Window* window, SDL_GLContext context) {
-
+    this->window = window;
     SDL_GL_GetDrawableSize(window, &W, &H);
     this->context = context;
     // Deklaracja zmiennych dla Vertex Array Object (VAO) i Vertex Buffer Object (VBO)
@@ -463,7 +463,7 @@ void MT::Renderer::ClearFrame(const unsigned char R, const unsigned char G, cons
 
 void MT::Renderer::RenderRectF(const RectF& rect, const Color& col) {
     if (Renderer::currentProgram != Renderer::renderRectId) {
-        RenderPresent();
+        RenderPresent(false);
         Renderer::currentProgram = Renderer::renderRectId;
         glUseProgram(Renderer::renderRectId);
     }
@@ -486,7 +486,7 @@ void MT::Renderer::RenderRectF(const RectF& rect, const Color& col) {
 
 void MT::Renderer::RenderRect(const Rect& rect, const Color& col) {
     if (Renderer::currentProgram != Renderer::renderRectId) {
-        RenderPresent();
+        RenderPresent(false);
         Renderer::currentProgram = Renderer::renderRectId;
         glUseProgram(Renderer::renderRectId);
     }
@@ -526,7 +526,7 @@ void MT::Renderer::RenderRect(const Rect& rect, const Color& col) {
 void MT::Renderer::RenderRectFEX(const RectF& rect, const Color &col, const float rotation) {
     // Włączenie atrybututów iwerzchołków
     if (Renderer::currentProgram != Renderer::renderRectId) {
-        RenderPresent();
+        RenderPresent(false);
         Renderer::currentProgram = Renderer::renderRectId;
         glUseProgram(Renderer::renderRectId);
     }
@@ -565,7 +565,7 @@ void MT::Renderer::RenderRectFEX(const RectF& rect, const Color &col, const floa
 void MT::Renderer::RenderRectEX(const Rect& rect, const Color &col, const float rotation) {
     // Włączenie atrybututów iwerzchołków
     if (Renderer::currentProgram != Renderer::renderRectId) {
-        RenderPresent();
+        RenderPresent(false);
         Renderer::currentProgram = Renderer::renderRectId;
         glUseProgram(Renderer::renderRectId);
     }
@@ -627,14 +627,14 @@ void MT::Renderer::RenderRectEX(const Rect& rect, const Color &col, const float 
 void MT::Renderer::RenderCopyF(const RectF& rect, const Texture& texture) {
     // Włączenie atrybututów iwerzchołków
     if (Renderer::currentTexture != texture.texture) {
-        RenderPresent();
+        RenderPresent(false);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture.texture);
         currentTexture = texture.texture;
     }
 
     if (Renderer::currentProgram != Renderer::renderCopyId) {
-        RenderPresent();
+        RenderPresent(false);
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
@@ -664,14 +664,14 @@ void MT::Renderer::RenderCopy(const Rect& rect, const Texture& texture){
 
     // aktywacja tekstury
     if (Renderer::currentTexture != texture.texture) {
-        RenderPresent();
+        RenderPresent(false);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture.texture);
         currentTexture = texture.texture;
     }
     
     if (Renderer::currentProgram != Renderer::renderCopyId) {
-        RenderPresent();
+        RenderPresent(false);
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
@@ -693,14 +693,14 @@ void MT::Renderer::RenderCopy(const Rect& rect, const Texture& texture){
 
 void MT::Renderer::RenderCopyPartF(const RectF& rect, const RectF& source, const Texture& texture) {
     if (Renderer::currentTexture != texture.texture) {
-        RenderPresent();
+        RenderPresent(false);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture.texture);
         currentTexture = texture.texture;
     }
 
     if (Renderer::currentProgram != Renderer::renderCopyId) {
-        RenderPresent();
+        RenderPresent(false);
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
@@ -733,14 +733,14 @@ void MT::Renderer::RenderCopyPart(const Rect& rect, const Rect& source, const Te
 
 
     if (Renderer::currentTexture != texture.texture) {
-        RenderPresent();
+        RenderPresent(false);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture.texture);
         currentTexture = texture.texture;
     }
 
     if (Renderer::currentProgram != Renderer::renderCopyId) {
-        RenderPresent();
+        RenderPresent(false);
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
@@ -773,14 +773,14 @@ void MT::Renderer::RenderCopyPart(const Rect& rect, const Rect& source, const Te
 
 void MT::Renderer::RenderCopyFEX(const RectF& rect, const Texture& texture, const float rotation) {
     if (Renderer::currentTexture != texture.texture) {
-        RenderPresent();
+        RenderPresent(false);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture.texture);
         currentTexture = texture.texture;
     }
 
     if (Renderer::currentProgram != Renderer::renderCopyId) {
-        RenderPresent();
+        RenderPresent(false);
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
@@ -815,14 +815,14 @@ void MT::Renderer::RenderCopyFEX(const RectF& rect, const Texture& texture, cons
 
 void MT::Renderer::RenderCopyEX(const Rect& rect, const Texture& texture, const float rotation) {
     if (Renderer::currentTexture != texture.texture) {
-        RenderPresent();
+        RenderPresent(false);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture.texture);
         currentTexture = texture.texture;
     }
 
     if (Renderer::currentProgram != Renderer::renderCopyId) {
-        RenderPresent();
+        RenderPresent(false);
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
@@ -864,14 +864,14 @@ void MT::Renderer::RenderCopyEX(const Rect& rect, const Texture& texture, const 
 
 void MT::Renderer::RenderCopyPartFEX(const RectF& rect, const RectF& source, const Texture& texture, const float rotation) {
     if (Renderer::currentTexture != texture.texture) {
-        RenderPresent();
+        RenderPresent(false);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture.texture);
         currentTexture = texture.texture;
     }
 
     if (Renderer::currentProgram != Renderer::renderCopyId) {
-        RenderPresent();
+        RenderPresent(false);
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
@@ -912,14 +912,14 @@ void MT::Renderer::RenderCopyPartFEX(const RectF& rect, const RectF& source, con
 
 void MT::Renderer::RenderCopyPartEX(const Rect& rect, const Rect& source, const Texture& texture, const float rotation) {
     if (Renderer::currentTexture != texture.texture) {
-        RenderPresent();
+        RenderPresent(false);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture.texture);
         currentTexture = texture.texture;
     }
 
     if (Renderer::currentProgram != Renderer::renderCopyId) {
-        RenderPresent();
+        RenderPresent(false);
         Renderer::currentProgram = Renderer::renderCopyId;
         glUseProgram(Renderer::renderCopyId);
     }
@@ -980,14 +980,14 @@ void MT::Renderer::RenderCopyCircle(const Rect& rect, const Texture& texture, co
 
 
     if (currentTexture != texture.texture) {
-        RenderPresent();
+        RenderPresent(false);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture.texture);
         currentTexture = texture.texture;
     }
 
     if (currentProgram != renderCopyCircleId) {
-        RenderPresent();
+        RenderPresent(false);
         currentProgram = renderCopyCircleId;
         glUseProgram(renderCopyCircleId);
         glUniform1f(radiusLoc, currentRadius);
@@ -995,7 +995,7 @@ void MT::Renderer::RenderCopyCircle(const Rect& rect, const Texture& texture, co
 
     if (currentRadius != radius) {
         currentRadius = radius;
-        RenderPresent();
+        RenderPresent(false);
         glUniform1f(radiusLoc, currentRadius);
     }
 
@@ -1016,7 +1016,7 @@ void MT::Renderer::RenderCopyCircle(const Rect& rect, const Texture& texture, co
 
 void MT::Renderer::RenderCircle(const Rect& rect, const Color& col, const float radius) {
     if (currentProgram != renderCircleId) {
-        RenderPresent();
+        RenderPresent(false);
         currentProgram = renderCircleId;
         glUseProgram(renderCircleId);
         glUniform1f(radiusLoc2, currentRadius);
@@ -1024,7 +1024,7 @@ void MT::Renderer::RenderCircle(const Rect& rect, const Color& col, const float 
 
     if (currentRadius != radius) {
         currentRadius = radius;
-        RenderPresent();
+        RenderPresent(false);
         glUniform1f(radiusLoc2, currentRadius);
     }
 
@@ -1053,7 +1053,7 @@ void MT::Renderer::RenderCircle(const Rect& rect, const Color& col, const float 
 
 void MT::Renderer::RenderRectAlpha(const Rect& rect, const Color& col, unsigned char alpha) {
     if (Renderer::currentProgram != renderRectAlphaId) {
-        RenderPresent();
+        RenderPresent(false);
         Renderer::currentProgram = renderRectAlphaId;
         glUseProgram(renderRectAlphaId);
     }
@@ -1086,7 +1086,7 @@ void MT::Renderer::RenderRectAlpha(const Rect& rect, const Color& col, unsigned 
 
 void MT::Renderer::RenderRectAlphaEX(const Rect& rect, const Color& col, unsigned char alpha, const float rotation) {
     if (Renderer::currentProgram != renderRectAlphaId) {
-        RenderPresent();
+        RenderPresent(false);
         Renderer::currentProgram = renderRectAlphaId;
         glUseProgram(renderRectAlphaId);
     }
@@ -1140,14 +1140,14 @@ void MT::Renderer::RenderCopyFiltered(const Rect& rect, const Texture& texture, 
 
     // aktywacja tekstury
     if (Renderer::currentTexture != texture.texture) {
-        RenderPresent();
+        RenderPresent(false);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture.texture);
         currentTexture = texture.texture;
     }
 
     if (currentProgram != renderCopyFilterId) {
-        RenderPresent();
+        RenderPresent(false);
         currentProgram = renderCopyFilterId;
         glUseProgram(renderCopyFilterId);
     }
@@ -1177,14 +1177,14 @@ void MT::Renderer::RenderCopyPartFiltered(const Rect& rect, const Rect& source, 
 
 
     if (Renderer::currentTexture != texture.texture) {
-        RenderPresent();
+        RenderPresent(false);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture.texture);
         currentTexture = texture.texture;
     }
 
     if (currentProgram != renderCopyFilterId) {
-        RenderPresent();
+        RenderPresent(false);
         currentProgram = renderCopyFilterId;
         glUseProgram(renderCopyFilterId);
     }
@@ -1216,7 +1216,7 @@ void MT::Renderer::RenderCopyPartFiltered(const Rect& rect, const Rect& source, 
 }
 
 
-void MT::Renderer::RenderPresent() {
+void MT::Renderer::RenderPresent(bool switchContext) {
     if (globalVertices.empty()) {
         return;
     }  
@@ -1227,6 +1227,8 @@ void MT::Renderer::RenderPresent() {
     glDrawArrays(GL_TRIANGLES, 0, globalVertices.size());
 
     globalVertices.clear();
+
+    if (switchContext) { SDL_GL_SwapWindow(window); }
 }
 
 

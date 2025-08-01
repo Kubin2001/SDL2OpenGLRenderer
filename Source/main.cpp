@@ -68,11 +68,8 @@ int main(int argc, char* argv[]) {
         //ren.RenderCopy(rect2, *metTex1);
         //ren.RenderRectAlphaEX(rect2, { 255,255,255 }, 100,counter);
             
-        
         ren.RenderPresent();
-
         counter++;
-        SDL_GL_SwapWindow(window);
     }
 
     SDL_Delay(100);

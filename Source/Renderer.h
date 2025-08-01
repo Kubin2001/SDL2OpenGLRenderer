@@ -57,6 +57,7 @@ namespace MT {
 	class Renderer {
 
 		private:
+			SDL_Window* window = nullptr;
 			 SDL_GLContext context;
 			 unsigned int currentProgram;
 			 
@@ -121,7 +122,7 @@ namespace MT {
 
 			 void RenderCopyPartFiltered(const Rect& rect, const Rect& source, const Texture& texture, const Color& filter);
 
-			 void RenderPresent();
+			 void RenderPresent(bool switchContext = true);
 
 			 void Clear();
 	};
