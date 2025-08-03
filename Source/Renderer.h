@@ -13,6 +13,13 @@ namespace MT {
 		float y;
 		float w;
 		float h;
+
+		constexpr void Set(const float x, const float y, const float w, const float h) noexcept{
+			this->x = x;
+			this->y = y;
+			this->w = w;
+			this->h = h;
+		}
 	};
 
 	struct Rect {
@@ -20,6 +27,13 @@ namespace MT {
 		int y;
 		int w;
 		int h;
+
+		constexpr void Set(const int x, const int y, const int w, const int h) noexcept {
+			this->x = x;
+			this->y = y;
+			this->w = w;
+			this->h = h;
+		}
 	};
 
 	struct Color {
